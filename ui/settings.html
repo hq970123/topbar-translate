@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>TopBar Translate 设置</title>
+<link rel="stylesheet" href="common.css" />
+<link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+<div class="layout">
+  <nav class="side">
+    <div class="brand"><img src="logo.png" alt="" /><div><b>TopBar Translate</b><span id="ver"></span></div></div>
+    <button class="tab active" data-tab="general">通用</button>
+    <button class="tab" data-tab="api">API 管理</button>
+    <button class="tab" data-tab="about">关于</button>
+  </nav>
+  <main>
+    <!-- General -->
+    <section class="page" id="page-general">
+      <h2>通用</h2>
+      <div class="group">
+        <div class="row"><div><b>开机启动</b><small>登录系统后自动在后台运行</small></div><label class="switch"><input type="checkbox" data-k="launch_at_login" /><span></span></label></div>
+        <div class="row"><div><b>顶部 Hover 唤起</b><small>鼠标移到屏幕顶部中间时展开翻译框</small></div><label class="switch"><input type="checkbox" data-k="hover_enabled" /><span></span></label></div>
+        <div class="row"><div><b>自动隐藏</b><small>鼠标移开后自动收起（正在输入时不会收起）</small></div><label class="switch"><input type="checkbox" data-k="auto_hide" /><span></span></label></div>
+        <div class="row"><div><b>自动翻译</b><small>输入停止后自动翻译</small></div><div class="inline"><input type="number" min="200" max="5000" step="100" data-k="auto_translate_delay_ms" class="num" /><em>ms</em><label class="switch"><input type="checkbox" data-k="auto_translate" /><span></span></label></div></div>
+      </div>
+      <div class="group">
+        <div class="row"><div><b>默认目标语言</b><small>非中文内容翻译成这个语言</small></div><select data-k="target_lang" class="langsel"></select></div>
+        <div class="row"><div><b>第二目标语言</b><small>输入内容已是默认目标语言时，改翻译成这个语言</small></div><select data-k="second_target_lang" class="langsel"></select></div>
+      </div>
+      <div class="group">
+        <div class="row"><div><b>全局唤起快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="shortcutBtn"></button></div>
+        <div class="row"><div><b>主题</b></div><select data-k="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
+      </div>
+      <details class="group adv">
+        <summary>高级：触发区域与动画</summary>
+        <div class="row"><div><b>触发区域宽度</b><small>屏幕顶部居中的透明区域</small></div><div class="inline"><input type="number" min="40" max="2000" data-k="trigger_width" class="num" /><em>px</em></div></div>
+        <div class="row"><div><b>触发区域高度</b></div><div class="inline"><input type="number" min="1" max="40" data-k="trigger_height" class="num" /><em>px</em></div></div>
+        <div class="row"><div><b>Hover 延迟</b></div><div class="inline"><input type="number" min="0" max="2000" step="50" data-k="hover_delay_ms" class="num" /><em>ms</em></div></div>
+        <div class="row"><div><b>自动收起延迟</b></div><div class="inline"><input type="number" min="100" max="10000" step="100" data-k="hide_delay_ms" class="num" /><em>ms</em></div></div>
+        <div class="row"><div><b>翻译窗口宽度</b></div><div class="inline"><input type="number" min="420" max="1200" step="10" data-k="panel_width" class="num" /><em>px</em></div></div>
+      </details>
+    </section>
+
+    <!-- API -->
+    <section class="page hidden" id="page-api">
+      <div class="head"><h2>API 管理</h2><button class="primary" id="addBtn">+ 添加</button></div>
+      <div class="group list" id="provList"></div>
+      <div class="group">
+        <div class="row"><div><b>默认翻译源</b></div><select id="defaultSel"></select></div>
+        <div class="row"><div><b>自动故障切换</b><small>默认服务失败时改用备用服务（V1.1 提供）</small></div><label class="switch"><input type="checkbox" disabled /><span></span></label></div>
+      </div>
+      <p class="note">API Key 保存在系统安全存储（Windows 凭据管理器 / macOS 钥匙串），不会写入配置文件或日志。翻译内容只发送到当前选中的翻译服务。</p>
+    </section>
+
+    <!-- About -->
+    <section class="page hidden" id="page-about">
+      <h2>关于</h2>
+      <div class="group about">
+        <p><b>TopBar Translate</b> <span id="ver2"></span></p>
+        <p>鼠标触顶即可翻译的轻量桌面工具。默认使用 Bilibili 开源的 Index-Translate 免费公网 API，无需注册或 API Key。</p>
+        <p class="note">免费公网 API 的限流、稳定性及商业使用条件以官方政策为准，不保证无限调用。</p>
+        <p><button class="ghost danger-text" id="quitBtn">退出 TopBar Translate</button></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Provider editor -->
+<div class="modal hidden" id="modal">
+  <div class="dialog">
+    <h3 id="mTitle">添加 API</h3>
+    <label>服务商<select id="mKind"></select></label>
+    <label>配置名称<input id="mName" placeholder="例如：DeepSeek 个人" /></label>
+    <label>Base URL<input id="mUrl" placeholder="https://" spellcheck="false" /></label>
+    <label id="mKeyRow">API Key<input id="mKey" type="password" autocomplete="off" spellcheck="false" /></label>
+    <label id="mModelRow">Model<input id="mModel" spellcheck="false" list="modelList" /><datalist id="modelList"></datalist></label>
+    <label id="mRegionRow" class="hidden">区域（Region）<input id="mRegion" placeholder="例如 eastasia，全局资源可留空" /></label>
+    <div class="two">
+      <label>超时时间（秒）<input id="mTimeout" type="number" min="5" max="300" /></label>
+      <label class="check"><input type="checkbox" id="mDefault" /> 设置为默认</label>
+    </div>
+    <div class="test" id="mTest"></div>
+    <div class="actions">
+      <button class="ghost" id="mTestBtn">测试连接</button>
+      <span class="spacer"></span>
+      <button class="ghost" id="mCancel">取消</button>
+      <button class="primary" id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="shared.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

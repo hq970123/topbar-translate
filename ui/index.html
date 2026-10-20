@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TopBar Translate</title>
+<link rel="stylesheet" href="common.css" />
+<link rel="stylesheet" href="panel.css" />
+</head>
+<body class="panel-body">
+<div id="panel" class="panel">
+  <header class="bar" data-drag>
+    <div class="dd" id="srcDD"><button class="chip" id="srcBtn"><span id="srcLabel">自动检测</span><i class="ico caret"></i></button><div class="menu" id="srcMenu"></div></div>
+    <button class="icon-btn" id="swapBtn" title="交换语言"><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></button>
+    <div class="dd" id="tgtDD"><button class="chip" id="tgtBtn"><span id="tgtLabel">中文（简体）</span><i class="ico caret"></i></button><div class="menu" id="tgtMenu"></div></div>
+    <div class="spacer" data-drag></div>
+    <button class="icon-btn" id="pinBtn" title="固定窗口（取消自动隐藏）"><svg viewBox="0 0 24 24"><path d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5M9 9l4-4"/><path d="M8.5 10.5l5 5"/></svg></button>
+    <button class="icon-btn" id="gearBtn" title="设置"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <button class="icon-btn" id="closeBtn" title="收起 (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </header>
+
+  <section class="card input-card">
+    <div id="welcome" class="welcome hidden">👋 鼠标移到屏幕顶部中间就能随时唤起我；快捷键 <b id="welcomeKey"></b></div>
+    <textarea id="input" placeholder="输入或粘贴需要翻译的内容，也可以直接粘贴图片..." maxlength="5000" spellcheck="false"></textarea>
+    <div id="imgChip" class="img-chip hidden"><img id="imgThumb" alt="" /><span>图片翻译</span><button id="imgClear" title="移除图片">×</button></div>
+    <div class="tools">
+      <button class="icon-btn" id="pasteBtn" title="粘贴剪贴板文本"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg></button>
+      <button class="icon-btn" id="micBtn" title="语音输入（V1.1 提供）" disabled><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="icon-btn" id="shotBtn" title="截图翻译（V1.1 提供，现在可直接粘贴截图）" disabled><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span class="detected" id="detected"></span>
+      <span class="counter" id="counter">0/5000</span>
+      <button class="primary" id="goBtn" disabled>翻译</button>
+    </div>
+  </section>
+
+  <section class="card result-card" id="resultCard">
+    <div class="result" id="result"><span class="placeholder">翻译结果将显示在这里...</span></div>
+    <div class="result-tools">
+      <span class="meta" id="meta"></span>
+      <button class="icon-btn" id="speakBtn" title="朗读"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+      <button class="icon-btn" id="copyBtn" title="复制"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+      <button class="icon-btn" id="retryBtn" title="重新翻译"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg></button>
+      <button class="icon-btn" id="expandBtn" title="展开结果"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="dd up" id="provDD"><button class="prov" id="provBtn"><span class="dot"></span><span id="provLabel">Index-Translate · 免费</span><i class="ico caret"></i></button><div class="menu" id="provMenu"></div></div>
+    <span class="hint" id="hint">Ctrl + Enter 翻译 · Esc 收起</span>
+  </footer>
+</div>
+<div id="toast" class="toast"></div>
+<script src="shared.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
