@@ -32,7 +32,7 @@ async function load() {
 function renderGeneral() {
   const s = ST.settings;
   document.querySelectorAll(".langsel").forEach((sel) => {
-    sel.innerHTML = ST.languages.map((l) => `<option value="${l.code}">${esc(l.label)}</option>`).join("");
+    sel.innerHTML = ST.languages.map((l) => `<option value="${l.code}">${esc(langName(l))}</option>`).join("");
   });
   document.querySelectorAll("[data-k]").forEach((el) => {
     const v = s[el.dataset.k];

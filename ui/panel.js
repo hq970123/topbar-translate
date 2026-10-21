@@ -68,9 +68,9 @@ function renderLangs() {
   $("tgtLabel").textContent = S.target === "auto" ? langLabel(st, effTarget) : langLabel(st, S.target);
   const item = (code, label, sel, sub = "") => `<div class="item ${sel ? "sel" : ""}" data-code="${code}">${esc(label)}${sub ? `<span class="sub">${esc(sub)}</span>` : ""}</div>`;
   $("srcMenu").innerHTML =
-    item("auto", "自动检测", S.source === "auto") + `<div class="sep"></div>` + st.languages.map((l) => item(l.code, l.label, S.source === l.code)).join("");
+    item("auto", "自动检测", S.source === "auto") + `<div class="sep"></div>` + st.languages.map((l) => item(l.code, langName(l), S.source === l.code)).join("");
   $("tgtMenu").innerHTML =
-    item("auto", "智能选择", S.target === "auto", "中文→英语，其他→中文") + `<div class="sep"></div>` + st.languages.map((l) => item(l.code, l.label, S.target === l.code)).join("");
+    item("auto", "智能选择", S.target === "auto", "中文→英语，其他→中文") + `<div class="sep"></div>` + st.languages.map((l) => item(l.code, langName(l), S.target === l.code)).join("");
 }
 
 $("srcBtn").onclick = () => toggleMenu($("srcDD"));

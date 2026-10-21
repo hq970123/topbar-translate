@@ -39,10 +39,23 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
 }
 
+// Language names follow the system UI language (e.g. Chinese system -> "英语", "日语").
+const UI_LOCALE = (navigator.languages && navigator.languages[0]) || navigator.language || "zh-CN";
+let _dn = null;
+try { _dn = new Intl.DisplayNames([UI_LOCALE, "en"], { type: "language" }); } catch (_) {}
+function langName(l) {
+  if (!l) return "";
+  try {
+    const n = _dn && _dn.of(l.code);
+    if (n && n !== l.code) return n.charAt(0).toLocaleUpperCase(UI_LOCALE) + n.slice(1);
+  } catch (_) {}
+  return l.label;
+}
+
 function langLabel(state, code) {
   if (code === "auto") return "自动检测";
   const l = state.languages.find((x) => x.code === code);
-  return l ? l.label : code;
+  return l ? langName(l) : code;
 }
 
 function prettyShortcut(s, platform) {
