@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition};
 
 /// Transparent margin (logical px) around the visible card, for its shadow.
-pub const MARGIN: f64 = 14.0;
+pub const MARGIN: f64 = 0.0;
 
 pub struct PanelState {
     pub visible: bool,

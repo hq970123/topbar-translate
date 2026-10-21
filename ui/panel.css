@@ -1,11 +1,11 @@
 html, body.panel-body { background: transparent; overflow: hidden; user-select: none; }
 .panel {
-  margin: 14px;
+  margin: 0;
   background: var(--bg);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   padding: 12px 14px 8px;
-  border: 1px solid rgba(255,255,255,.6);
+  border: 1px solid var(--line);
   opacity: 0;
   transform: translateY(-14px) scale(.985);
   transform-origin: top center;
