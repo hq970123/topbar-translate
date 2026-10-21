@@ -52,3 +52,5 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .switch input:checked + span { background: var(--primary); }
 .switch input:checked + span::after { transform: translateX(17px); }
 :root[data-theme="dark"] .switch span { background: #4a5162; }
+svg.lucide { width: 18px; height: 18px; stroke-width: 2; }
+svg.lucide.caret { width: 15px; height: 15px; margin-left: 6px; opacity: .6; flex: none; }
