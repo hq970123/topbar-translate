@@ -27,6 +27,7 @@ new ResizeObserver(reportSize).observe(panel);
 async function loadState() {
   S.state = await invoke("get_state");
   applyTheme(S.state.settings.theme);
+  setUiLang(S.state.settings.ui_language);
   if (!S.providerId || !S.state.providers.some((p) => p.id === S.providerId && p.enabled)) {
     S.providerId = S.state.settings.default_provider;
   }
@@ -104,7 +105,7 @@ function renderProviders() {
     list
       .map((x) => {
         const warn = x.key_required && !x.has_key ? "未配置 Key" : providerTag(x);
-        return `<div class="item ${x.id === S.providerId ? "sel" : ""}" data-id="${x.id}">${esc(x.name)}<span class="sub">${esc(warn)}${x.id === S.state.settings.default_provider ? " · 默认" : ""}</span></div>`;
+        return `<div class="item ${x.id === S.providerId ? "sel" : ""}" data-id="${x.id}">${esc(x.name)}<span class="sub">${esc(warn)}${x.id === S.state.settings.default_provider ? " · " + t("默认") : ""}</span></div>`;
       })
       .join("") + `<div class="sep"></div><div class="item" data-id="__manage">API 管理…</div>`;
 }
@@ -207,7 +208,7 @@ async function doTranslate() {
     if (id !== S.reqId) return; // a newer request superseded this one
     S.last = r;
     res.textContent = r.text;
-    const auto = S.source === "auto" ? "检测到 " : "";
+    const auto = S.source === "auto" ? t("检测到") + " " : "";
     $("meta").textContent = `${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
     renderLangs();
   } catch (err) {

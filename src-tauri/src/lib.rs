@@ -382,12 +382,35 @@ fn show_settings(app: &AppHandle, tab: Option<String>) {
         None => "settings.html".to_string(),
     };
     let _ = WebviewWindowBuilder::new(app, "settings", WebviewUrl::App(url.into()))
-        .title("TopBar Translate 设置")
+        .title(ui_strings(app).get(4).cloned().unwrap_or_else(|| "TopBar Translate".into()))
         .inner_size(820.0, 600.0)
         .min_inner_size(700.0, 500.0)
         .center()
         .focused(true)
         .build();
+}
+
+/// Localized native strings pushed by the UI: [show, settings, apis, quit, settings title].
+struct UiStrings {
+    texts: Mutex<Vec<String>>,
+    items: Mutex<Vec<MenuItem<tauri::Wry>>>,
+}
+
+fn ui_strings(app: &AppHandle) -> Vec<String> {
+    app.try_state::<UiStrings>().map(|s| s.texts.lock().unwrap().clone()).unwrap_or_default()
+}
+
+#[tauri::command]
+fn set_ui_strings(app: AppHandle, strings: Vec<String>) {
+    if let Some(st) = app.try_state::<UiStrings>() {
+        for (item, text) in st.items.lock().unwrap().iter().zip(strings.iter()) {
+            let _ = item.set_text(text);
+        }
+        if let (Some(w), Some(t)) = (app.get_webview_window("settings"), strings.get(4)) {
+            let _ = w.set_title(t);
+        }
+        *st.texts.lock().unwrap() = strings;
+    }
 }
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
@@ -397,6 +420,10 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let sep = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "退出 TopBar Translate", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &settings, &apis, &sep, &quit])?;
+    app.manage(UiStrings {
+        texts: Mutex::new(Vec::new()),
+        items: Mutex::new(vec![show.clone(), settings.clone(), apis.clone(), quit.clone()]),
+    });
 
     #[cfg(target_os = "macos")]
     let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
@@ -541,6 +568,7 @@ pub fn run() {
             detect_language,
             translate,
             save_settings,
+            set_ui_strings,
             save_provider,
             delete_provider,
             set_default_provider,

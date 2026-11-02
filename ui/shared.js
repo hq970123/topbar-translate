@@ -39,15 +39,20 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
 }
 
-// Language names follow the system UI language (e.g. Chinese system -> "英语", "日语").
-const UI_LOCALE = (navigator.languages && navigator.languages[0]) || navigator.language || "zh-CN";
-let _dn = null;
-try { _dn = new Intl.DisplayNames([UI_LOCALE, "en"], { type: "language" }); } catch (_) {}
+// Language names follow the interface language (see i18n.js).
+const _dnCache = {};
+function _dn() {
+  if (!(uiLang in _dnCache)) {
+    try { _dnCache[uiLang] = new Intl.DisplayNames([uiLang, "en"], { type: "language" }); } catch (_) { _dnCache[uiLang] = null; }
+  }
+  return _dnCache[uiLang];
+}
 function langName(l) {
   if (!l) return "";
   try {
-    const n = _dn && _dn.of(l.code);
-    if (n && n !== l.code) return n.charAt(0).toLocaleUpperCase(UI_LOCALE) + n.slice(1);
+    const dn = _dn();
+    const n = dn && dn.of(l.code);
+    if (n && n !== l.code) return n.charAt(0).toLocaleUpperCase(uiLang) + n.slice(1);
   } catch (_) {}
   return l.label;
 }
@@ -77,7 +82,7 @@ function prettyShortcut(s, platform) {
 }
 
 function providerTag(p) {
-  if (p.kind === "index") return "免费";
-  if (p.kind === "ollama") return "本地";
-  return KIND_LABEL[p.kind] || p.kind;
+  if (p.kind === "index") return t("免费");
+  if (p.kind === "ollama") return t("本地");
+  return t(KIND_LABEL[p.kind] || p.kind);
 }

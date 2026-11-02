@@ -23,6 +23,7 @@ if (location.hash) showTab(location.hash.slice(1));
 async function load() {
   ST = await invoke("get_state");
   applyTheme(ST.settings.theme);
+  setUiLang(ST.settings.ui_language);
   $("ver").textContent = `v${ST.version}`;
   $("ver2").textContent = `v${ST.version}`;
   renderGeneral();
@@ -31,6 +32,8 @@ async function load() {
 
 function renderGeneral() {
   const s = ST.settings;
+  $("uiLangSel").innerHTML = `<option value="auto">${esc(t("跟随系统"))}</option>` +
+    UI_LANGS.map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join("");
   document.querySelectorAll(".langsel").forEach((sel) => {
     sel.innerHTML = ST.languages.map((l) => `<option value="${l.code}">${esc(langName(l))}</option>`).join("");
   });
@@ -47,6 +50,7 @@ async function saveSettings(patch) {
   try {
     ST = await invoke("save_settings", { settings: next });
     applyTheme(ST.settings.theme);
+    if (uiLang !== resolveUiLang(ST.settings.ui_language)) setUiLang(ST.settings.ui_language);
     renderGeneral();
     toast("已保存");
   } catch (e) {
@@ -122,7 +126,7 @@ function renderApis() {
   const def = ST.settings.default_provider;
   const rows = ST.providers.map((p) => {
     const st = statusOf(p);
-    const detail = p.kind === "index" ? st.text : `${KIND_LABEL[p.kind] || p.kind}${p.model ? " · " + p.model : ""} · ${st.text}`;
+    const detail = p.kind === "index" ? st.text : `${t(KIND_LABEL[p.kind] || p.kind)}${p.model ? " · " + p.model : ""} · ${st.text}`;
     const isDef = p.id === def;
     return `<div class="prov-row" data-id="${p.id}">
       <span class="status ${st.cls}"></span>
@@ -164,7 +168,7 @@ $("provList").addEventListener("click", async (e) => {
     if (act === "default") { ST = await invoke("set_default_provider", { id }); renderApis(); toast("已设为默认"); }
     if (act === "edit") openEditor(p);
     if (act === "delete") {
-      if (!confirm(`确定删除「${p.name}」？保存在系统安全存储中的 API Key 也会一并删除。`)) return;
+      if (!confirm(t("确定删除「{0}」？保存在系统安全存储中的 API Key 也会一并删除。", p.name))) return;
       ST = await invoke("delete_provider", { id }); renderApis(); toast("已删除");
     }
     if (act === "test") {
@@ -193,7 +197,8 @@ async function applyKind(kind, fresh) {
   if (fresh) {
     $("mUrl").value = url;
     $("mModel").value = model;
-    if (!$("mName").value || Object.values(KIND_LABEL).includes($("mName").value)) $("mName").value = KIND_LABEL[kind].replace(/（.*）/, "");
+    const kindNames = Object.values(KIND_LABEL).flatMap((v) => [v, t(v)].map((x) => x.replace(/\s*[（(].*[）)]/, "")));
+    if (!$("mName").value || kindNames.includes($("mName").value)) $("mName").value = t(KIND_LABEL[kind]).replace(/\s*[（(].*[）)]/, "");
   }
   $("mUrl").placeholder = url || "https://example.com/v1";
   $("modelList").innerHTML = (MODELS[kind] || []).map((m) => `<option value="${m}">`).join("");

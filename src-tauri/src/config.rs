@@ -24,6 +24,8 @@ pub struct Settings {
     pub default_provider: String,
     pub shortcut: String,
     pub theme: String,
+    /// auto | zh-CN | zh-TW | en | fr | es | ru | ar | ja | ko
+    pub ui_language: String,
     pub launch_at_login: bool,
     pub onboarded: bool,
 }
@@ -45,6 +47,7 @@ impl Default for Settings {
             default_provider: INDEX_ID.into(),
             shortcut: "CommandOrControl+Alt+T".into(),
             theme: "system".into(),
+            ui_language: "auto".into(),
             launch_at_login: false,
             onboarded: false,
         }

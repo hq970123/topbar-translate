@@ -31,6 +31,7 @@
       <div class="group">
         <div class="row"><div><b>全局唤起快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="shortcutBtn"></button></div>
         <div class="row"><div><b>主题</b></div><select data-k="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
+        <div class="row"><div><b>界面语言</b></div><select data-k="ui_language" id="uiLangSel"></select></div>
       </div>
       <details class="group adv">
         <summary>高级：触发区域与动画</summary>
@@ -90,6 +91,8 @@
   </div>
 </div>
 <div id="toast" class="toast"></div>
+<script src="i18n-data.js"></script>
+<script src="i18n.js"></script>
 <script src="shared.js"></script>
 <script src="settings.js"></script>
 </body>
