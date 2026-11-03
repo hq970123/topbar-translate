@@ -21,9 +21,14 @@ $m = $m.Replace("__NAME__", $id.name).Replace("__PUBLISHER__", $id.publisher).Re
 $m = $m.Replace("__PUBLISHER_DISPLAY_NAME__", $id.publisherDisplayName).Replace("__DISPLAY_NAME__", $id.displayName)
 [IO.File]::WriteAllText("$root/$stage/AppxManifest.xml", $m, (New-Object Text.UTF8Encoding $false))
 
-$sdk = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.*\x64" -Directory | Sort-Object Name -Descending | Select-Object -First 1
-$makepri = Join-Path $sdk.FullName "makepri.exe"
-$makeappx = Join-Path $sdk.FullName "makeappx.exe"
+# Newest Windows SDK bin folder that has both tools.
+$sdk = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Directory |
+  Where-Object { $_.Name -match '^10\.' -and (Test-Path "$($_.FullName)\x64\makeappx.exe") -and (Test-Path "$($_.FullName)\x64\makepri.exe") } |
+  Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+if (-not $sdk) { throw "Windows SDK (makeappx/makepri) not found" }
+Write-Host "Using Windows SDK $($sdk.Name)"
+$makepri = Join-Path $sdk.FullName "x64\makepri.exe"
+$makeappx = Join-Path $sdk.FullName "x64\makeappx.exe"
 Push-Location $stage
 & $makepri createconfig /cf priconfig.xml /dq zh-CN /o | Out-Null
 & $makepri new /pr . /cf priconfig.xml /of resources.pri /o
