@@ -42,7 +42,7 @@ function renderGeneral() {
     if (el.type === "checkbox") el.checked = !!v;
     else el.value = v;
   });
-  $("shortcutBtn").textContent = prettyShortcut(s.shortcut, ST.platform);
+  document.querySelectorAll("[data-sc]").forEach((b) => (b.textContent = prettyShortcut(s[b.dataset.sc], ST.platform)));
 }
 
 async function saveSettings(patch) {
@@ -73,12 +73,14 @@ document.querySelectorAll("[data-k]").forEach((el) => {
 });
 
 /* ---------- shortcut recorder ---------- */
-let recording = false;
-$("shortcutBtn").onclick = () => {
-  recording = true;
-  $("shortcutBtn").classList.add("rec");
-  $("shortcutBtn").textContent = "请按下组合键…";
-};
+let recording = null; // the shortcut button being recorded
+document.querySelectorAll("[data-sc]").forEach((b) => (b.onclick = () => {
+  if (recording) recording.classList.remove("rec");
+  recording = b;
+  b.classList.add("rec");
+  b.textContent = "请按下组合键…";
+}));
+function stopRec() { recording?.classList.remove("rec"); const k = recording?.dataset.sc; recording = null; return k; }
 function keyName(e) {
   const c = e.code;
   if (/^Key[A-Z]$/.test(c)) return c.slice(3);
@@ -91,10 +93,8 @@ document.addEventListener("keydown", (e) => {
   if (!recording) return;
   e.preventDefault();
   e.stopPropagation();
-  if (e.key === "Escape") { recording = false; $("shortcutBtn").classList.remove("rec"); renderGeneral(); return; }
-  if (e.key === "Backspace" || e.key === "Delete") {
-    recording = false; $("shortcutBtn").classList.remove("rec"); saveSettings({ shortcut: "" }); return;
-  }
+  if (e.key === "Escape") { stopRec(); renderGeneral(); return; }
+  if (e.key === "Backspace" || e.key === "Delete") { saveSettings({ [stopRec()]: "" }); return; }
   const k = keyName(e);
   if (!k) return; // waiting for a non-modifier key
   const mods = [];
@@ -109,9 +109,11 @@ document.addEventListener("keydown", (e) => {
   if (e.altKey) mods.push("Alt");
   if (e.shiftKey) mods.push("Shift");
   if (!mods.length && !/^F\d+$/.test(k)) { toast("请至少包含一个修饰键（Ctrl/⌘/Alt/Shift）"); return; }
-  recording = false;
-  $("shortcutBtn").classList.remove("rec");
-  saveSettings({ shortcut: [...mods, k].join("+") });
+  const combo = [...mods, k].join("+");
+  const key = stopRec();
+  const other = key === "shortcut" ? "snip_shortcut" : "shortcut";
+  if (ST.settings[other] === combo) { toast("两个快捷键不能相同"); renderGeneral(); return; }
+  saveSettings({ [key]: combo });
 }, true);
 
 /* ---------- API list ---------- */
@@ -269,3 +271,52 @@ $("mSave").onclick = async () => {
 $("quitBtn").onclick = () => invoke("quit_app");
 listen("config:changed", load);
 load();
+
+/* ---------- voice models ---------- */
+const VOICE_DESC = { tiny: "最快，准确度一般", base: "推荐，速度与准确度均衡", small: "更准确，需要更好的电脑" };
+let voice = null, voiceProg = {};
+async function renderVoice() {
+  try { voice = await invoke("voice_status"); } catch (_) { return; }
+  $("voiceModels").innerHTML = voice.models.map((m) => {
+    const dl = voice.downloading === m.name;
+    const p = voiceProg[m.name];
+    const pct = p && p.total ? Math.floor((p.received / p.total) * 100) : 0;
+    const sel = voice.selected === m.name;
+    let act;
+    if (dl) act = `<div class="vprog"><span style="width:${pct}%"></span></div><em>${pct}%</em><button class="link" data-vcancel>取消</button>`;
+    else if (m.downloaded) act = `${sel ? `<span class="badge">✓ 使用中</span>` : `<button class="link" data-vuse="${m.name}">使用</button>`}<button class="link danger" data-vdel="${m.name}">删除</button>`;
+    else act = `<button class="ghost" data-vdl="${m.name}" ${voice.downloading ? "disabled" : ""}>下载</button>`;
+    return `<div class="row"><div><b>${m.name} · ${m.size_mb} MB</b><small>${VOICE_DESC[m.name] || ""}</small></div><div class="inline">${act}</div></div>`;
+  }).join("");
+}
+$("voiceModels").addEventListener("click", async (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.vdl) {
+    const name = b.dataset.vdl;
+    voiceProg[name] = { received: 0, total: 0 };
+    invoke("voice_download", { name })
+      .then(async () => { toast("下载完成"); if (!voice.models.some((m) => m.name === voice.selected && m.downloaded)) await saveSettings({ voice_model: name }); })
+      .catch((err) => toast(String(err)))
+      .finally(renderVoice);
+    setTimeout(renderVoice, 100);
+  } else if (b.dataset.vcancel !== undefined) {
+    invoke("voice_cancel_download");
+  } else if (b.dataset.vuse) {
+    await saveSettings({ voice_model: b.dataset.vuse });
+    renderVoice();
+  } else if (b.dataset.vdel) {
+    try { await invoke("voice_delete", { name: b.dataset.vdel }); toast("已删除"); } catch (err) { toast(String(err)); }
+    renderVoice();
+  }
+});
+listen("voice:progress", (e) => {
+  voiceProg[e.payload.name] = e.payload;
+  const bar = document.querySelector(".vprog span");
+  if (!bar) return renderVoice();
+  const pct = e.payload.total ? Math.floor((e.payload.received / e.payload.total) * 100) : 0;
+  bar.style.width = pct + "%";
+  bar.parentElement.nextElementSibling.textContent = pct + "%";
+});
+listen("voice:changed", renderVoice);
+renderVoice();

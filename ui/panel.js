@@ -292,7 +292,48 @@ function maybeWelcome() {
   $("welcome").classList.remove("hidden");
   setTimeout(() => $("welcome").classList.add("hidden"), 12000);
 }
-listen("config:changed", async () => { await loadState(); });
+listen("config:changed", async () => { await loadState(); refreshVoice(); });
+
+/* ---------- screenshot translation ---------- */
+$("shotBtn").onclick = () => invoke("start_snip");
+listen("panel:image", (e) => { if (e.payload) setImage(e.payload); });
+listen("panel:toast", (e) => toast(String(e.payload)));
+
+/* ---------- voice input (shown only when a local model is downloaded) ---------- */
+const mic = $("micBtn");
+let recording = false;
+async function refreshVoice() {
+  try {
+    const v = await invoke("voice_status");
+    mic.classList.toggle("hidden", !v.ready);
+  } catch (_) { mic.classList.add("hidden"); }
+}
+listen("voice:changed", refreshVoice);
+listen("voice:level", (e) => { if (recording) mic.style.setProperty("--lvl", Math.min(1, e.payload * 3).toFixed(2)); });
+mic.onclick = async () => {
+  if (!recording) {
+    try {
+      await invoke("voice_start");
+      recording = true;
+      mic.classList.add("rec");
+    } catch (err) { toast(String(err)); }
+    return;
+  }
+  recording = false;
+  mic.classList.remove("rec");
+  mic.classList.add("busy");
+  try {
+    const text = await invoke("voice_stop", { source: S.source });
+    if (text) {
+      const pos = input.selectionStart ?? input.value.length;
+      input.value = input.value.slice(0, pos) + text + input.value.slice(input.selectionEnd ?? pos);
+      input.dispatchEvent(new Event("input"));
+      doTranslate();
+    }
+  } catch (err) { toast(String(err)); }
+  finally { mic.classList.remove("busy"); }
+};
+refreshVoice();
 
 loadState().then(() => {
   updateCounter();

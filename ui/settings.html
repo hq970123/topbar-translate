@@ -29,9 +29,14 @@
         <div class="row"><div><b>第二目标语言</b><small>输入内容已是默认目标语言时，改翻译成这个语言</small></div><select data-k="second_target_lang" class="langsel"></select></div>
       </div>
       <div class="group">
-        <div class="row"><div><b>全局唤起快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="shortcutBtn"></button></div>
+        <div class="row"><div><b>全局唤起快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="shortcutBtn" data-sc="shortcut"></button></div>
+        <div class="row"><div><b>截图翻译快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="snipShortcutBtn" data-sc="snip_shortcut"></button></div>
         <div class="row"><div><b>主题</b></div><select data-k="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
         <div class="row"><div><b>界面语言</b></div><select data-k="ui_language" id="uiLangSel"></select></div>
+      </div>
+      <div class="group" id="voiceGroup">
+        <div class="row"><div><b>语音输入</b><small>使用本地 Whisper 模型离线识别，下载模型后翻译框里会出现麦克风按钮</small></div></div>
+        <div id="voiceModels"></div>
       </div>
       <details class="group adv">
         <summary>高级：触发区域与动画</summary>

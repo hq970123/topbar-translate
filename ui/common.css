@@ -54,3 +54,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 :root[data-theme="dark"] .switch span { background: #4a5162; }
 svg.lucide { width: 18px; height: 18px; stroke-width: 2; }
 svg.lucide.caret { width: 15px; height: 15px; margin-left: 6px; opacity: .6; flex: none; }
+
+.icon-btn.rec { color: #fff; background: #ef4444; box-shadow: 0 0 0 calc(var(--lvl, 0) * 6px) rgba(239, 68, 68, .3); transition: box-shadow .08s; }
+.icon-btn.busy { opacity: .5; pointer-events: none; animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .25; } }

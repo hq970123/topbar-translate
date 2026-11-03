@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000; }
+  #shot { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+  #mask { position: fixed; inset: 0; background: rgba(0, 0, 0, .38); }
+  #sel { position: fixed; display: none; outline: 2px solid #3b82f6; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .38); }
+  #tip { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 10px;
+         background: rgba(20, 22, 28, .85); color: #fff; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; pointer-events: none; }
+  #size { position: fixed; padding: 2px 6px; border-radius: 6px; background: #3b82f6; color: #fff; font: 12px system-ui, sans-serif; display: none; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="shot"></canvas>
+<div id="mask"></div>
+<div id="sel"></div>
+<div id="size"></div>
+<div id="tip">拖动选择要翻译的区域 · Esc 取消</div>
+<script src="i18n-data.js"></script>
+<script src="i18n.js"></script>
+<script>
+const invoke = (c, a) => window.__TAURI__.core.invoke(c, a);
+const sel = document.getElementById("sel"), mask = document.getElementById("mask"), size = document.getElementById("size");
+let start = null, rect = null, done = false;
+const finish = (r) => { if (done) return; done = true; invoke("snip_finish", { rect: r }); };
+(async () => {
+  try {
+    const st = await invoke("get_state");
+    setUiLang(st.settings.ui_language);
+  } catch (_) {}
+  const url = await invoke("snip_image").catch(() => null);
+  if (!url) return finish(null);
+  const img = new Image();
+  img.onload = () => {
+    const c = document.getElementById("shot");
+    c.width = img.width; c.height = img.height;
+    c.getContext("2d").drawImage(img, 0, 0);
+    invoke("snip_ready");
+  };
+  img.src = url;
+})();
+addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  start = { x: e.clientX, y: e.clientY };
+  mask.style.display = "none";
+  sel.style.display = "block";
+  draw(e);
+});
+addEventListener("mousemove", (e) => { if (start) draw(e); });
+addEventListener("mouseup", (e) => {
+  if (!start || e.button !== 0) return;
+  draw(e);
+  start = null;
+  if (rect.w < 4 || rect.h < 4) { sel.style.display = "none"; size.style.display = "none"; mask.style.display = "block"; return; }
+  const W = innerWidth, H = innerHeight;
+  finish([rect.x / W, rect.y / H, rect.w / W, rect.h / H]);
+});
+addEventListener("contextmenu", (e) => { e.preventDefault(); finish(null); });
+addEventListener("keydown", (e) => { if (e.key === "Escape") finish(null); });
+addEventListener("blur", () => setTimeout(() => { if (!document.hasFocus()) finish(null); }, 300));
+function draw(e) {
+  const x = Math.min(start.x, e.clientX), y = Math.min(start.y, e.clientY);
+  rect = { x, y, w: Math.abs(e.clientX - start.x), h: Math.abs(e.clientY - start.y) };
+  Object.assign(sel.style, { left: x + "px", top: y + "px", width: rect.w + "px", height: rect.h + "px" });
+  size.style.display = "block";
+  size.textContent = `${Math.round(rect.w * devicePixelRatio)} × ${Math.round(rect.h * devicePixelRatio)}`;
+  Object.assign(size.style, { left: x + "px", top: Math.max(0, y - 24) + "px" });
+}
+</script>
+</body>
+</html>

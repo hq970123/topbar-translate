@@ -26,6 +26,9 @@ jobs:
             args: "--target universal-apple-darwin"
             name: macos-universal
     runs-on: ${{ matrix.platform }}
+    env:
+      # whisper.cpp: portable CPU build (no -march=native from the CI machine)
+      GGML_NATIVE: "OFF"
     steps:
       - uses: actions/checkout@v4
 

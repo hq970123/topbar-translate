@@ -55,3 +55,7 @@ select { min-width: 170px; }
 .test { font-size: 13px; min-height: 18px; white-space: pre-wrap; }
 .test.ok { color: var(--ok); }
 .test.bad { color: var(--danger); }
+
+.vprog { width: 140px; height: 6px; border-radius: 3px; background: var(--card-2); overflow: hidden; }
+.vprog span { display: block; height: 100%; background: var(--primary); transition: width .2s; }
+.link.danger { color: #ef4444; }

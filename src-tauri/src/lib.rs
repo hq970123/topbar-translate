@@ -1,6 +1,8 @@
 mod config;
 mod lang;
 mod panel;
+mod snip;
+mod voice;
 mod translate;
 
 use config::{secrets, Config, Provider, Settings};
@@ -159,7 +161,7 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
     {
         let st = app.state::<AppState>();
         let mut cfg = st.cfg.lock().unwrap();
-        old_shortcut = cfg.settings.shortcut.clone();
+        old_shortcut = (cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone());
         let onboarded = cfg.settings.onboarded;
         cfg.settings = settings;
         cfg.settings.onboarded = onboarded;
@@ -168,13 +170,18 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
     let (shortcut, autostart) = {
         let st = app.state::<AppState>();
         let cfg = st.cfg.lock().unwrap();
-        (cfg.settings.shortcut.clone(), cfg.settings.launch_at_login)
+        ((cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone()), cfg.settings.launch_at_login)
     };
     if shortcut != old_shortcut {
-        if let Err(e) = apply_shortcut(&app, &shortcut) {
-            // Roll back to the previous working shortcut.
-            app.state::<AppState>().cfg.lock().unwrap().settings.shortcut = old_shortcut.clone();
-            let _ = apply_shortcut(&app, &old_shortcut);
+        if let Err(e) = apply_shortcut(&app, &shortcut.0, &shortcut.1) {
+            // Roll back to the previous working shortcuts.
+            {
+                let st = app.state::<AppState>();
+                let mut cfg = st.cfg.lock().unwrap();
+                cfg.settings.shortcut = old_shortcut.0.clone();
+                cfg.settings.snip_shortcut = old_shortcut.1.clone();
+            }
+            let _ = apply_shortcut(&app, &old_shortcut.0, &old_shortcut.1);
             return Err(e);
         }
     }
@@ -348,13 +355,26 @@ fn quit_app(app: AppHandle) {
 
 // ---------- helpers ----------
 
-fn apply_shortcut(app: &AppHandle, shortcut: &str) -> Result<(), String> {
+fn apply_shortcut(app: &AppHandle, shortcut: &str, snip: &str) -> Result<(), String> {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
-    if shortcut.trim().is_empty() {
-        return Ok(());
+    for s in [shortcut, snip] {
+        if s.trim().is_empty() {
+            continue;
+        }
+        gs.register(s).map_err(|e| format!("快捷键 {s} 无法注册（可能已被占用）：{e}"))?;
     }
-    gs.register(shortcut).map_err(|e| format!("快捷键 {shortcut} 无法注册（可能已被占用）：{e}"))
+    Ok(())
+}
+
+fn is_snip_shortcut(app: &AppHandle, sc: &tauri_plugin_global_shortcut::Shortcut) -> bool {
+    let snip = app.state::<AppState>().cfg.lock().unwrap().settings.snip_shortcut.clone();
+    snip.parse::<tauri_plugin_global_shortcut::Shortcut>().map(|s| s.id() == sc.id()).unwrap_or(false)
+}
+
+#[tauri::command]
+fn start_snip(app: AppHandle) {
+    snip::start(&app);
 }
 
 fn apply_autostart(app: &AppHandle, on: bool) {
@@ -479,9 +499,13 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--autostart"])))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, _shortcut, event| {
+                .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        panel::toggle(app);
+                        if is_snip_shortcut(app, shortcut) {
+                            snip::start(app);
+                        } else {
+                            panel::toggle(app);
+                        }
                     }
                 })
                 .build(),
@@ -492,14 +516,16 @@ pub fn run() {
 
             let handle = app.handle().clone();
             let cfg = config::load(&handle);
-            let shortcut = cfg.settings.shortcut.clone();
+            let shortcut = (cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone());
             let first_run = !cfg.settings.onboarded;
             app.manage(AppState {
                 cfg: Mutex::new(cfg),
                 panel: Arc::new(Mutex::new(panel::PanelState::default())),
             });
 
-            if let Err(e) = apply_shortcut(&handle, &shortcut) {
+            app.manage(snip::SnipState::default());
+            app.manage(voice::VoiceState::default());
+            if let Err(e) = apply_shortcut(&handle, &shortcut.0, &shortcut.1) {
                 eprintln!("{e}");
             }
             // Keep the OS login item in sync with the setting.
@@ -569,6 +595,16 @@ pub fn run() {
             translate,
             save_settings,
             set_ui_strings,
+            start_snip,
+            snip::snip_image,
+            snip::snip_ready,
+            snip::snip_finish,
+            voice::voice_status,
+            voice::voice_download,
+            voice::voice_delete,
+            voice::voice_cancel_download,
+            voice::voice_start,
+            voice::voice_stop,
             save_provider,
             delete_provider,
             set_default_provider,

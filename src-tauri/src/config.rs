@@ -23,6 +23,10 @@ pub struct Settings {
     pub second_target_lang: String,
     pub default_provider: String,
     pub shortcut: String,
+    /// Global shortcut for screenshot translation.
+    pub snip_shortcut: String,
+    /// Whisper model for voice input: tiny | base | small
+    pub voice_model: String,
     pub theme: String,
     /// auto | zh-CN | zh-TW | en | fr | es | ru | ar | ja | ko
     pub ui_language: String,
@@ -46,6 +50,8 @@ impl Default for Settings {
             second_target_lang: "en".into(),
             default_provider: INDEX_ID.into(),
             shortcut: "CommandOrControl+Alt+T".into(),
+            snip_shortcut: "CommandOrControl+Alt+S".into(),
+            voice_model: "base".into(),
             theme: "system".into(),
             ui_language: "auto".into(),
             launch_at_login: false,

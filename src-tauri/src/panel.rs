@@ -56,7 +56,7 @@ fn contains(m: &Monitor, p: &PhysicalPosition<f64>) -> bool {
         && p.y < pos.y as f64 + size.height as f64
 }
 
-fn monitor_at(app: &AppHandle, p: Option<PhysicalPosition<f64>>) -> Option<Monitor> {
+pub fn monitor_at(app: &AppHandle, p: Option<PhysicalPosition<f64>>) -> Option<Monitor> {
     if let Some(p) = p {
         if let Ok(list) = app.available_monitors() {
             if let Some(m) = list.into_iter().find(|m| contains(m, &p)) {
