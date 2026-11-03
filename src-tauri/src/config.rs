@@ -27,6 +27,14 @@ pub struct Settings {
     pub snip_shortcut: String,
     /// Whisper model for voice input: tiny | base | small
     pub voice_model: String,
+    /// Clear input and result after the panel collapses.
+    pub clear_on_hide: bool,
+    /// Keep a local translation history (stored in the webview's localStorage).
+    pub history_enabled: bool,
+    /// Keep at most this many entries (0 = unlimited).
+    pub history_max_items: u64,
+    /// Drop entries older than this many days (0 = keep forever).
+    pub history_max_days: u64,
     pub theme: String,
     /// auto | zh-CN | zh-TW | en | fr | es | ru | ar | ja | ko
     pub ui_language: String,
@@ -52,6 +60,10 @@ impl Default for Settings {
             shortcut: "CommandOrControl+Alt+T".into(),
             snip_shortcut: "CommandOrControl+Alt+S".into(),
             voice_model: "base".into(),
+            clear_on_hide: true,
+            history_enabled: true,
+            history_max_items: 500,
+            history_max_days: 30,
             theme: "system".into(),
             ui_language: "auto".into(),
             launch_at_login: false,

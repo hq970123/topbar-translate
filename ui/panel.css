@@ -56,3 +56,19 @@ textarea::placeholder { color: var(--muted); }
 .prov:hover { background: var(--card-2); color: var(--text); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .hint { color: var(--muted); font-size: 12px; }
+
+/* ---------- history ---------- */
+.history-card { padding: 10px 12px; }
+.hist-head { display: flex; gap: 8px; align-items: center; }
+.hist-head input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: var(--card-2); color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.hist-head input:focus { border-color: var(--primary); }
+.hist-list { margin-top: 8px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.hist-item { position: relative; padding: 8px 34px 8px 10px; border-radius: 10px; cursor: pointer; }
+.hist-item:hover { background: var(--card-2); }
+.hist-item .src { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item .dst { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.hist-item .when { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.hist-item .del { position: absolute; top: 6px; inset-inline-end: 4px; width: 26px; height: 26px; opacity: 0; }
+.hist-item:hover .del { opacity: .8; }
+.hist-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 22px 0; }
+#histBtn.active { color: var(--primary); }

@@ -34,6 +34,13 @@
         <div class="row"><div><b>主题</b></div><select data-k="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
         <div class="row"><div><b>界面语言</b></div><select data-k="ui_language" id="uiLangSel"></select></div>
       </div>
+      <div class="group" id="historyGroup">
+        <div class="row"><div><b>收起后清空内容</b><small>翻译框收起时清除输入和翻译结果（固定时不会收起）</small></div><label class="switch"><input type="checkbox" data-k="clear_on_hide" /><span></span></label></div>
+        <div class="row"><div><b>保存历史记录</b><small>翻译结果只保存在本机，可在翻译框的历史记录里搜索</small></div><label class="switch"><input type="checkbox" data-k="history_enabled" /><span></span></label></div>
+        <div class="row"><div><b>最多保留条数</b><small>超出后自动删除最早的记录，0 表示不限</small></div><div class="inline"><input type="number" min="0" max="100000" step="50" data-k="history_max_items" class="num" /><em>条</em></div></div>
+        <div class="row"><div><b>保留时长</b><small>超过天数的记录自动删除，0 表示永久保留</small></div><div class="inline"><input type="number" min="0" max="3650" step="1" data-k="history_max_days" class="num" /><em>天</em></div></div>
+        <div class="row"><div><b>清空历史记录</b><small id="histCount"></small></div><button class="ghost" id="histClearAll">立即清空</button></div>
+      </div>
       <div class="group" id="voiceGroup">
         <div class="row"><div><b>语音输入</b><small>使用本地 Whisper 模型离线识别，下载模型后翻译框里会出现麦克风按钮</small></div></div>
         <div id="voiceModels"></div>
@@ -99,6 +106,7 @@
 <script src="i18n-data.js"></script>
 <script src="i18n.js"></script>
 <script src="shared.js"></script>
+<script src="history.js"></script>
 <script src="settings.js"></script>
 </body>
 </html>

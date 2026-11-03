@@ -86,3 +86,19 @@ function providerTag(p) {
   if (p.kind === "ollama") return t("本地");
   return t(KIND_LABEL[p.kind] || p.kind);
 }
+
+/** Two-step confirm on a button: first click arms it ("确认清空？"), second click within 3 s runs fn. */
+function armConfirm(btn, fn, enabled) {
+  let timer = null;
+  const label = btn.textContent;
+  btn.addEventListener("click", () => {
+    if (enabled && !enabled()) return;
+    if (btn.dataset.armed) {
+      clearTimeout(timer); delete btn.dataset.armed; btn.textContent = t(label); btn.classList.remove("danger");
+      fn();
+      return;
+    }
+    btn.dataset.armed = "1"; btn.textContent = t("确认清空？"); btn.classList.add("danger");
+    timer = setTimeout(() => { delete btn.dataset.armed; btn.textContent = t(label); btn.classList.remove("danger"); }, 3000);
+  });
+}

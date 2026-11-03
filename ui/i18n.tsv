@@ -176,3 +176,25 @@ Base URL 只支持 http(s)‖Base URL 只支援 http(s)‖Base URL must be http(
 无法打开麦克风：{0}‖無法開啟麥克風：{0}‖Can’t open the microphone: {0}‖Impossible d’ouvrir le micro : {0}‖No se puede abrir el micrófono: {0}‖Не удалось открыть микрофон: {0}‖تعذر فتح الميكروفون: {0}‖マイクを開けません: {0}‖마이크를 열 수 없습니다: {0}
 无法加载语音模型：{0}‖無法載入語音模型：{0}‖Can’t load the voice model: {0}‖Impossible de charger le modèle : {0}‖No se puede cargar el modelo: {0}‖Не удалось загрузить модель: {0}‖تعذر تحميل النموذج الصوتي: {0}‖音声モデルを読み込めません: {0}‖음성 모델을 불러올 수 없습니다: {0}
 语音识别失败：{0}‖語音辨識失敗：{0}‖Speech recognition failed: {0}‖Échec de la reconnaissance : {0}‖Error de reconocimiento: {0}‖Ошибка распознавания: {0}‖فشل التعرف على الكلام: {0}‖音声認識に失敗: {0}‖음성 인식 실패: {0}
+历史记录‖歷史記錄‖History‖Historique‖Historial‖История‖السجل‖履歴‖기록
+搜索历史记录...‖搜尋歷史記錄...‖Search history...‖Rechercher dans l’historique...‖Buscar en el historial...‖Поиск по истории...‖البحث في السجل...‖履歴を検索...‖기록 검색...
+清空‖清空‖Clear‖Effacer‖Borrar‖Очистить‖مسح‖クリア‖지우기
+返回‖返回‖Back‖Retour‖Volver‖Назад‖رجوع‖戻る‖뒤로
+暂无历史记录‖暫無歷史記錄‖No history yet‖Aucun historique‖Sin historial‖История пуста‖لا يوجد سجل بعد‖履歴はまだありません‖기록이 없습니다
+没有匹配的记录‖沒有符合的記錄‖No matching entries‖Aucun résultat‖Sin coincidencias‖Ничего не найдено‖لا توجد نتائج مطابقة‖一致する履歴はありません‖일치하는 기록이 없습니다
+历史记录已关闭，可在设置中开启‖歷史記錄已關閉，可在設定中開啟‖History is off. Turn it on in Settings.‖Historique désactivé. Activez-le dans les réglages.‖El historial está desactivado. Actívalo en Ajustes.‖История отключена. Включите её в настройках.‖السجل متوقف. فعّله من الإعدادات.‖履歴はオフです。設定でオンにできます。‖기록이 꺼져 있습니다. 설정에서 켤 수 있습니다.
+确认清空？‖確認清空？‖Confirm clear?‖Confirmer ?‖¿Confirmar?‖Подтвердить?‖تأكيد المسح؟‖本当にクリア？‖지울까요?
+已清空历史记录‖已清空歷史記錄‖History cleared‖Historique effacé‖Historial borrado‖История очищена‖تم مسح السجل‖履歴を消去しました‖기록을 지웠습니다
+收起后清空内容‖收起後清空內容‖Clear after collapsing‖Effacer à la fermeture‖Borrar al ocultar‖Очищать при скрытии‖المسح بعد الإخفاء‖閉じたら内容をクリア‖접으면 내용 지우기
+翻译框收起时清除输入和翻译结果（固定时不会收起）‖翻譯框收起時清除輸入和翻譯結果（固定時不會收起）‖Clears the input and result when the panel hides (a pinned panel never hides)‖Efface la saisie et le résultat quand le panneau se ferme (un panneau épinglé reste ouvert)‖Borra la entrada y el resultado al ocultarse el panel (fijado no se oculta)‖Очищает ввод и результат при скрытии панели (закреплённая не скрывается)‖يمسح النص والنتيجة عند إخفاء اللوحة (اللوحة المثبتة لا تختفي)‖パネルが閉じると入力と結果を消去（固定中は閉じません）‖패널이 접히면 입력과 결과를 지웁니다 (고정 시 접히지 않음)
+保存历史记录‖儲存歷史記錄‖Save history‖Enregistrer l’historique‖Guardar historial‖Сохранять историю‖حفظ السجل‖履歴を保存‖기록 저장
+翻译结果只保存在本机，可在翻译框的历史记录里搜索‖翻譯結果只儲存在本機，可在翻譯框的歷史記錄中搜尋‖Stored only on this device; search it from the panel’s History button‖Stocké uniquement sur cet appareil ; recherchez-le via le bouton Historique‖Solo se guarda en este equipo; búscalo con el botón Historial‖Хранится только на этом устройстве; ищите через кнопку «История»‖يُحفظ على هذا الجهاز فقط؛ ابحث فيه من زر السجل‖この端末にのみ保存。パネルの履歴ボタンから検索できます‖이 기기에만 저장되며 패널의 기록 버튼에서 검색할 수 있습니다
+最多保留条数‖最多保留筆數‖Max entries‖Nombre max d’entrées‖Máximo de entradas‖Макс. записей‖الحد الأقصى للسجلات‖最大保存件数‖최대 보관 개수
+超出后自动删除最早的记录，0 表示不限‖超出後自動刪除最早的記錄，0 表示不限‖Oldest entries are removed beyond this; 0 = unlimited‖Au-delà, les plus anciennes sont supprimées ; 0 = illimité‖Al superarlo se borran las más antiguas; 0 = sin límite‖Старые записи удаляются сверх лимита; 0 = без ограничений‖تُحذف الأقدم عند التجاوز؛ 0 = بلا حد‖超えると古い順に削除。0 は無制限‖초과하면 오래된 기록부터 삭제, 0은 무제한
+条‖筆‖items‖entrées‖entradas‖шт.‖سجل‖件‖개
+保留时长‖保留時長‖Keep for‖Conserver‖Conservar durante‖Хранить‖مدة الاحتفاظ‖保存期間‖보관 기간
+超过天数的记录自动删除，0 表示永久保留‖超過天數的記錄自動刪除，0 表示永久保留‖Older entries are removed automatically; 0 = keep forever‖Les entrées plus anciennes sont supprimées ; 0 = pour toujours‖Las más antiguas se borran; 0 = para siempre‖Старые записи удаляются; 0 = хранить всегда‖تُحذف الأقدم تلقائيًا؛ 0 = للأبد‖期間を過ぎた履歴は自動削除。0 は無期限‖기간이 지난 기록은 자동 삭제, 0은 영구 보관
+天‖天‖days‖jours‖días‖дн.‖أيام‖日‖일
+清空历史记录‖清空歷史記錄‖Clear history‖Effacer l’historique‖Borrar historial‖Очистить историю‖مسح السجل‖履歴を消去‖기록 지우기
+立即清空‖立即清空‖Clear now‖Effacer‖Borrar ahora‖Очистить‖امسح الآن‖今すぐ消去‖지금 지우기
+当前共 {0} 条记录‖目前共 {0} 筆記錄‖{0} entries saved‖{0} entrées enregistrées‖{0} entradas guardadas‖Сохранено записей: {0}‖{0} سجل محفوظ‖{0} 件保存中‖{0}개 저장됨

@@ -58,3 +58,4 @@ svg.lucide.caret { width: 15px; height: 15px; margin-left: 6px; opacity: .6; fle
 .icon-btn.rec { color: #fff; background: #ef4444; box-shadow: 0 0 0 calc(var(--lvl, 0) * 6px) rgba(239, 68, 68, .3); transition: box-shadow .08s; }
 .icon-btn.busy { opacity: .5; pointer-events: none; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
+.ghost.danger { color: var(--danger); border-color: var(--danger); }

@@ -208,6 +208,7 @@ async function doTranslate() {
     if (id !== S.reqId) return; // a newer request superseded this one
     S.last = r;
     res.textContent = r.text;
+    History.add({ src: text.trim().slice(0, 5000), dst: r.text, sl: r.source, tl: r.target, prov: r.provider_name, img: !!S.image && !text.trim() }, S.state.settings);
     const auto = S.source === "auto" ? t("检测到") + " " : "";
     $("meta").textContent = `${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
     renderLangs();
@@ -272,6 +273,7 @@ document.addEventListener("keydown", (e) => {
 });
 /* ---------- show / hide ---------- */
 function openPanel() {
+  clearTimeout(S.clearTimer);
   maybeWelcome();
   panel.classList.remove("closing");
   requestAnimationFrame(() => panel.classList.add("open"));
@@ -284,7 +286,30 @@ listen("panel:hide", () => {
   panel.classList.add("closing");
   panel.classList.remove("open");
   speechSynthesis?.cancel();
+  if (S.state?.settings.clear_on_hide !== false) {
+    clearTimeout(S.clearTimer);
+    S.clearTimer = setTimeout(clearContent, 260); // after the slide-up animation
+  }
 });
+function clearContent() {
+  if (panel.classList.contains("open")) return; // re-opened meanwhile
+  clearTimeout(S.autoTimer);
+  S.reqId++; // drop any in-flight result
+  input.value = "";
+  S.image = null;
+  $("imgThumb").src = "";
+  $("imgChip").classList.add("hidden");
+  S.last = null;
+  S.detected = null;
+  $("result").innerHTML = `<span class="placeholder">${t("翻译结果将显示在这里...")}</span>`;
+  $("result").removeAttribute("title");
+  $("result").classList.remove("expanded");
+  $("expandBtn").classList.remove("active");
+  $("meta").textContent = "";
+  showHistory(false);
+  updateCounter();
+  renderLangs();
+}
 listen("panel:pinned", (e) => $("pinBtn").classList.toggle("active", !!e.payload));
 function maybeWelcome() {
   if (localStorage.getItem("welcomed")) return;
@@ -340,4 +365,55 @@ loadState().then(() => {
   reportSize();
   // The window may have been shown before this script started listening.
   if (S.state.visible) openPanel();
+});
+
+/* ---------- history ---------- */
+function fmtWhen(ts) {
+  const d = new Date(ts), now = new Date();
+  const hm = d.toLocaleTimeString(uiLang || undefined, { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return hm;
+  return d.toLocaleDateString(uiLang || undefined, { month: "short", day: "numeric" }) + " " + hm;
+}
+function renderHistory() {
+  const list = History.search($("histSearch").value, S.state?.settings);
+  const box = $("histList");
+  if (!list.length) {
+    const off = S.state?.settings.history_enabled === false;
+    box.innerHTML = `<div class="hist-empty">${esc(t(off ? "历史记录已关闭，可在设置中开启" : ($("histSearch").value.trim() ? "没有匹配的记录" : "暂无历史记录")))}</div>`;
+    return;
+  }
+  box.innerHTML = list.slice(0, 200).map((e) => `
+    <div class="hist-item" data-id="${e.id}">
+      <div class="src">${e.img ? "🖼 " : ""}${esc(e.src || t("图片翻译"))}</div>
+      <div class="dst">${esc(e.dst)}</div>
+      <div class="when">${esc(fmtWhen(e.ts))} · ${esc(langLabel(S.state, e.sl))} → ${esc(langLabel(S.state, e.tl))}${e.prov ? " · " + esc(e.prov) : ""}</div>
+      <button class="icon-btn del" data-del="${e.id}" title="${esc(t("删除"))}"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></svg></button>
+    </div>`).join("");
+}
+function showHistory(on) {
+  $("historyCard").classList.toggle("hidden", !on);
+  document.querySelector(".input-card").classList.toggle("hidden", on);
+  $("resultCard").classList.toggle("hidden", on);
+  $("histBtn").classList.toggle("active", on);
+  if (on) { $("histSearch").value = ""; renderHistory(); setTimeout(() => $("histSearch").focus(), 20); }
+  requestAnimationFrame(reportSize);
+}
+$("histBtn").onclick = () => showHistory($("historyCard").classList.contains("hidden"));
+$("histClose").onclick = () => showHistory(false);
+$("histSearch").addEventListener("input", () => { invoke("ui_activity", { typing: true, hold: false }); renderHistory(); });
+$("histSearch").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); showHistory(false); } });
+armConfirm($("histClear"), () => { History.clear(); renderHistory(); toast("已清空历史记录"); }, () => History.count() > 0);
+$("histList").addEventListener("click", (ev) => {
+  const del = ev.target.closest("[data-del]");
+  if (del) { ev.stopPropagation(); History.remove(del.dataset.del); renderHistory(); return; }
+  const item = ev.target.closest(".hist-item"); if (!item) return;
+  const e = History.all(S.state?.settings).find((x) => x.id === item.dataset.id); if (!e) return;
+  S.reqId++;
+  input.value = e.src || "";
+  setImage(null);
+  S.last = { text: e.dst, source: e.sl, target: e.tl, provider_name: e.prov };
+  $("result").textContent = e.dst;
+  $("meta").textContent = `${langLabel(S.state, e.sl)} → ${langLabel(S.state, e.tl)}${e.prov ? " · " + e.prov : ""} · ${fmtWhen(e.ts)}`;
+  updateCounter();
+  showHistory(false);
 });

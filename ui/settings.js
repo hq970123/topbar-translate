@@ -43,7 +43,18 @@ function renderGeneral() {
     else el.value = v;
   });
   document.querySelectorAll("[data-sc]").forEach((b) => (b.textContent = prettyShortcut(s[b.dataset.sc], ST.platform)));
+  renderHistCount();
 }
+function renderHistCount() {
+  const n = History.all(ST.settings).length; // also applies the retention limits
+  $("histCount").textContent = t("当前共 {0} 条记录", n);
+  ["history_max_items", "history_max_days"].forEach((k) => {
+    const el = document.querySelector(`[data-k="${k}"]`);
+    if (el) el.disabled = !ST.settings.history_enabled;
+  });
+}
+armConfirm($("histClearAll"), () => { History.clear(); renderHistCount(); toast("已清空历史记录"); }, () => History.count() > 0);
+window.addEventListener("focus", () => ST && renderHistCount());
 
 async function saveSettings(patch) {
   const next = { ...ST.settings, ...patch };
