@@ -377,7 +377,34 @@ fn start_snip(app: AppHandle) {
     snip::start(&app);
 }
 
+/// Running from an MSIX package (Microsoft Store)? Registry Run keys don't apply there.
+#[cfg(windows)]
+fn msix_packaged() -> bool {
+    windows::ApplicationModel::Package::Current().is_ok()
+}
+
+/// Packaged launch-at-login: the StartupTask declared in AppxManifest.xml.
+#[cfg(windows)]
+fn apply_startup_task(on: bool) -> windows::core::Result<()> {
+    use windows::ApplicationModel::{StartupTask, StartupTaskState};
+    let task = StartupTask::GetAsync(&windows::core::HSTRING::from("TopBarTranslateStartup"))?.get()?;
+    let state = task.State()?;
+    if on {
+        if state == StartupTaskState::Disabled {
+            task.RequestEnableAsync()?.get()?;
+        }
+    } else if state == StartupTaskState::Enabled {
+        task.Disable()?;
+    }
+    Ok(())
+}
+
 fn apply_autostart(app: &AppHandle, on: bool) {
+    #[cfg(windows)]
+    if msix_packaged() {
+        let _ = apply_startup_task(on);
+        return;
+    }
     let al = app.autolaunch();
     let cur = al.is_enabled().unwrap_or(false);
     if on && !cur {
