@@ -38,6 +38,7 @@
       </div>
       <div class="group" id="historyGroup">
         <div class="row"><div><b>收起后清空内容</b><small>翻译框收起时清除输入和翻译结果（固定时不会收起）</small></div><label class="switch"><input type="checkbox" data-k="clear_on_hide" /><span></span></label></div>
+        <div class="row"><div><b>单词查词</b><small>输入单个英文单词时显示音标、发音和英文释义（单词会发送到 dictionaryapi.dev）</small></div><label class="switch"><input type="checkbox" data-k="word_lookup" /><span></span></label></div>
         <div class="row"><div><b>保存历史记录</b><small>翻译结果只保存在本机，可在翻译框的历史记录里搜索</small></div><label class="switch"><input type="checkbox" data-k="history_enabled" /><span></span></label></div>
         <div class="row"><div><b>最多保留条数</b><small>超出后自动删除最早的记录，0 表示不限</small></div><div class="inline"><input type="number" min="0" max="100000" step="50" data-k="history_max_items" class="num" /><em>条</em></div></div>
         <div class="row"><div><b>保留时长</b><small>超过天数的记录自动删除，0 表示永久保留</small></div><div class="inline"><input type="number" min="0" max="3650" step="1" data-k="history_max_days" class="num" /><em>天</em></div></div>

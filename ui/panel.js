@@ -204,6 +204,8 @@ async function doTranslate() {
   res.innerHTML = `<span class="loading">翻译中</span>`;
   $("meta").textContent = "";
   clearCompare();
+  clearDict();
+  const dictP = !S.image && isWord(text) && S.state.settings.word_lookup ? invoke("lookup_word", { word: text.trim() }).catch(() => null) : null;
   try {
     const r = await invoke("translate", { req: { text, image: S.image, source: S.source, target: S.target, provider_id: S.providerId } });
     if (id !== S.reqId) return; // a newer request superseded this one
@@ -215,11 +217,89 @@ async function doTranslate() {
     $("meta").textContent = `${fb}${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
     renderLangs();
     runCompare(id, text, S.image, r);
+    updateStar(text, r);
+    if (dictP) dictP.then((d) => { if (id === S.reqId && d) renderDict(d); });
   } catch (err) {
     if (id !== S.reqId) return;
     showError(err);
   }
 }
+
+/* ---------- word lookup + vocabulary ---------- */
+const isWord = (s) => /^[A-Za-z][A-Za-z'-]{0,39}$/.test((s || "").trim());
+const canStar = (s) => { s = (s || "").trim(); return !!s && s.length <= 60 && !/\n/.test(s); };
+const SPK_SVG = `<svg class="lucide" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /></svg>`;
+function clearDict() {
+  S.dict = null;
+  $("dict").innerHTML = "";
+  $("dict").classList.add("hidden");
+  $("starBtn").classList.add("hidden");
+}
+function renderDict(d) {
+  S.dict = d;
+  const head = `<div class="dict-head"><b>${esc(d.word)}</b>${d.phonetic ? `<span class="ph">${esc(d.phonetic)}</span>` : ""}${d.audio ? `<button class="icon-btn" id="dictAudio" title="${esc(t("发音"))}">${SPK_SVG}</button>` : ""}</div>`;
+  const body = d.meanings.map((m) => `<div class="dict-m"><i>${esc(m.pos)}</i> ${m.defs.map(esc).join("<br>")}</div>`).join("");
+  $("dict").innerHTML = head + body;
+  $("dict").classList.remove("hidden");
+  const a = $("dictAudio");
+  if (a) a.onclick = () => { try { new Audio(d.audio).play(); } catch {} };
+  reportSize();
+}
+function updateStar(text, r) {
+  const b = $("starBtn");
+  const ok = canStar(text) && !S.image;
+  b.classList.toggle("hidden", !ok);
+  b.classList.toggle("active", ok && Vocab.has(text));
+  b.dataset.src = ok ? text.trim() : "";
+}
+$("starBtn").onclick = () => {
+  const b = $("starBtn"); const src = b.dataset.src;
+  if (!src || !S.last) return;
+  if (Vocab.has(src)) { Vocab.removeSrc(src); b.classList.remove("active"); toast("已移出生词本"); return; }
+  const d = S.dict && S.dict.word.toLowerCase() === src.toLowerCase() ? S.dict : null;
+  Vocab.add({ src, dst: S.last.text, sl: S.last.source, tl: S.last.target, phonetic: d?.phonetic || "", audio: d?.audio || "", def: d ? d.meanings.map((m) => `${m.pos}. ${m.defs[0]}`).join(" / ") : "" });
+  b.classList.add("active");
+  toast("已加入生词本");
+};
+function renderVocab() {
+  const list = Vocab.search($("vocabSearch").value);
+  $("vocabList").innerHTML = !list.length
+    ? `<div class="hist-empty">${esc(t(Vocab.count() ? "没有匹配的单词" : "生词本还是空的，翻译单词后点星标收藏"))}</div>`
+    : list.map((e) => `<div class="hist-item" data-id="${e.id}" data-src="${esc(e.src)}">
+      <div class="src">${esc(e.src)}${e.phonetic ? ` <span class="ph">${esc(e.phonetic)}</span>` : ""}</div>
+      <div class="dst">${esc(e.dst)}</div>
+      <button class="icon-btn del" data-del="${e.id}" title="${esc(t("删除"))}"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></svg></button>
+    </div>`).join("");
+}
+function showVocab(on) {
+  if (on) showHistory(false);
+  $("vocabCard").classList.toggle("hidden", !on);
+  document.querySelector(".input-card").classList.toggle("hidden", on);
+  $("resultCard").classList.toggle("hidden", on);
+  $("compare").classList.toggle("hist-off", on);
+  $("vocabBtn").classList.toggle("active", on);
+  if (on) { $("vocabSearch").value = ""; renderVocab(); setTimeout(() => $("vocabSearch").focus(), 20); }
+  requestAnimationFrame(reportSize);
+}
+$("vocabBtn").onclick = () => showVocab($("vocabCard").classList.contains("hidden"));
+$("vocabClose").onclick = () => showVocab(false);
+$("vocabSearch").addEventListener("input", () => { invoke("ui_activity", { typing: true, hold: false }); renderVocab(); });
+$("vocabSearch").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); showVocab(false); } });
+$("vocabList").addEventListener("click", (e) => {
+  const del = e.target.closest("[data-del]");
+  if (del) { e.stopPropagation(); Vocab.remove(del.dataset.del); renderVocab(); return; }
+  const it = e.target.closest(".hist-item"); if (!it) return;
+  showVocab(false);
+  input.value = it.dataset.src;
+  input.dispatchEvent(new Event("input"));
+  doTranslate();
+});
+$("vocabExport").onclick = async () => {
+  if (!Vocab.count()) { toast("生词本还是空的"); return; }
+  try { const p = await invoke("export_vocab", { csv: Vocab.csv() }); toast(t("已导出到 {0}", p)); }
+  catch (err) { toast(String(err)); }
+};
+armConfirm($("vocabClear"), () => { Vocab.clear(); renderVocab(); toast("已清空生词本"); }, () => Vocab.count() > 0);
 
 /* ---------- multi-engine compare ---------- */
 function clearCompare() {
@@ -349,7 +429,9 @@ function clearContent() {
   $("expandBtn").classList.remove("active");
   $("meta").textContent = "";
   clearCompare();
+  clearDict();
   showHistory(false);
+  showVocab(false);
   updateCounter();
   renderLangs();
 }
@@ -446,6 +528,7 @@ function renderHistory() {
     </div>`).join("");
 }
 function showHistory(on) {
+  if (on && !$("vocabCard").classList.contains("hidden")) showVocab(false);
   $("historyCard").classList.toggle("hidden", !on);
   document.querySelector(".input-card").classList.toggle("hidden", on);
   $("resultCard").classList.toggle("hidden", on);

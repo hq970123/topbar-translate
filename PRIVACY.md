@@ -12,7 +12,7 @@ Applies to: 顶部悬浮翻译 (TopBar Translate)
 **简而言之：本应用不收集你的个人数据。只有你主动翻译的内容会发送给你选择的翻译服务。**
 
 1. **翻译的文字和图片**
-   当你点击翻译（或开启自动翻译后停止输入）时，应用会把你输入的文字，或你粘贴、截取的图片，发送给你在设置中选择的翻译服务。默认服务是哔哩哔哩 Index-Translate（index-translate.bilibili.com），无需账号。你也可以改用自己配置的服务（如 OpenAI、DeepSeek、Google Gemini、Anthropic Claude、DeepL、Microsoft Translator、本机 Ollama 或自定义接口）。这些服务按各自的隐私政策处理请求。请求中不包含开发者添加的任何设备标识或账号信息。
+   当你点击翻译（或开启自动翻译后停止输入）时，应用会把你输入的文字，或你粘贴、截取的图片，发送给你在设置中选择的翻译服务。默认服务是哔哩哔哩 Index-Translate（index-translate.bilibili.com），无需账号。你也可以改用自己配置的服务（如 OpenAI、DeepSeek、Google Gemini、Anthropic Claude、DeepL、Microsoft Translator、本机 Ollama 或自定义接口）。开启「自动故障切换」或「多引擎对比」后，同一段内容也会发送给你已配置并启用的其他服务。开启「单词查词」后，单个英文单词会发送到 dictionaryapi.dev 以获取音标和释义。这些服务按各自的隐私政策处理请求。请求中不包含开发者添加的任何设备标识或账号信息。
 
 2. **截图**
    只有在你按下截图快捷键或截图按钮后，应用才会截取屏幕。框选区域的图片仅在本机处理，只有在你确认后才会作为翻译内容发送给所选翻译服务（见第 1 条）。应用不会在后台截屏，也不会保存截图文件。
@@ -39,7 +39,7 @@ Applies to: 顶部悬浮翻译 (TopBar Translate)
 **In short: the app does not collect personal data. Only the content you choose to translate is sent to the translation service you select.**
 
 1. **Text and images you translate**
-   When you translate (or stop typing with auto-translate on), the app sends the text you entered, or the image you pasted or captured, to the translation service selected in Settings. The default is Bilibili Index-Translate (index-translate.bilibili.com), which needs no account. You can switch to a service you configure yourself (such as OpenAI, DeepSeek, Google Gemini, Anthropic Claude, DeepL, Microsoft Translator, a local Ollama server, or a custom endpoint). Each service handles requests under its own privacy policy. The app adds no device identifier or account information to these requests.
+   When you translate (or stop typing with auto-translate on), the app sends the text you entered, or the image you pasted or captured, to the translation service selected in Settings. The default is Bilibili Index-Translate (index-translate.bilibili.com), which needs no account. You can switch to a service you configure yourself (such as OpenAI, DeepSeek, Google Gemini, Anthropic Claude, DeepL, Microsoft Translator, a local Ollama server, or a custom endpoint). With automatic failover or engine comparison turned on, the same text is also sent to the other services you configured and enabled. With word lookup turned on, a single English word is sent to dictionaryapi.dev to get its pronunciation and definitions. Each service handles requests under its own privacy policy. The app adds no device identifier or account information to these requests.
 
 2. **Screenshots**
    The app captures the screen only after you press the screenshot shortcut or button. The selected region is processed on your device and is sent to your translation service only as the content you asked to translate (see point 1). The app never captures the screen in the background and does not save screenshot files.
@@ -54,7 +54,7 @@ Applies to: 顶部悬浮翻译 (TopBar Translate)
    - No sign-up or account of any kind;
    - No analytics, advertising or crash reporting;
    - The developer never receives your translations, screenshots, recordings or any personal data;
-   - No selling or sharing of data with third parties (other than the translation service you choose).
+   - No selling or sharing of data with third parties (other than the translation and dictionary services described above).
 
 6. **Contact**
    Questions: heqiong300624@gmail.com

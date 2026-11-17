@@ -214,3 +214,19 @@ Base URL 只支持 http(s)‖Base URL 只支援 http(s)‖Base URL must be http(
 翻译时同时显示这些服务的译文，最多 3 个‖翻譯時同時顯示這些服務的譯文，最多 3 個‖Also show translations from these services, up to 3‖Afficher aussi les traductions de ces services (3 max)‖Mostrar también las traducciones de estos servicios (máx. 3)‖Показывать также переводы этих сервисов (до 3)‖اعرض أيضًا ترجمات هذه الخدمات (حتى 3)‖これらのサービスの訳文も表示（最大 3 個）‖이 서비스들의 번역도 함께 표시(최대 3개)
 最多选择 3 个‖最多選擇 3 個‖Choose up to 3‖3 au maximum‖Máximo 3‖Не более 3‖3 كحد أقصى‖最大 3 個まで‖최대 3개까지
 {0} 失败，已改用 {1}‖{0} 失敗，已改用 {1}‖{0} failed, used {1}‖{0} a échoué, {1} utilisé‖{0} falló, se usó {1}‖{0} не ответил, использован {1}‖فشل {0}، تم استخدام {1}‖{0} が失敗、{1} を使用‖{0} 실패, {1} 사용
+单词查词‖單字查詢‖Word lookup‖Recherche de mot‖Búsqueda de palabras‖Поиск слова‖البحث عن الكلمة‖単語検索‖단어 검색
+输入单个英文单词时显示音标、发音和英文释义（单词会发送到 dictionaryapi.dev）‖輸入單個英文單字時顯示音標、發音和英文釋義（單字會傳送到 dictionaryapi.dev）‖For a single English word, show pronunciation and definitions (the word is sent to dictionaryapi.dev)‖Pour un seul mot anglais, afficher prononciation et définitions (le mot est envoyé à dictionaryapi.dev)‖Para una sola palabra en inglés, mostrar pronunciación y definiciones (la palabra se envía a dictionaryapi.dev)‖Для одного английского слова показывать транскрипцию и определения (слово отправляется на dictionaryapi.dev)‖لكلمة إنجليزية واحدة، اعرض النطق والتعريفات (تُرسل الكلمة إلى dictionaryapi.dev)‖英単語1語のとき発音記号・発音・英英定義を表示（単語は dictionaryapi.dev に送信）‖영어 단어 하나일 때 발음기호·발음·영영 뜻 표시(단어는 dictionaryapi.dev로 전송)
+生词本‖生字本‖Vocabulary‖Vocabulaire‖Vocabulario‖Словарь‖المفردات‖単語帳‖단어장
+加入生词本‖加入生字本‖Add to vocabulary‖Ajouter au vocabulaire‖Añadir al vocabulario‖Добавить в словарь‖أضف إلى المفردات‖単語帳に追加‖단어장에 추가
+搜索生词本...‖搜尋生字本...‖Search vocabulary...‖Rechercher dans le vocabulaire...‖Buscar en el vocabulario...‖Поиск по словарю...‖ابحث في المفردات...‖単語帳を検索...‖단어장 검색...
+导出‖匯出‖Export‖Exporter‖Exportar‖Экспорт‖تصدير‖エクスポート‖내보내기
+发音‖發音‖Pronounce‖Prononcer‖Pronunciar‖Произношение‖النطق‖発音‖발음
+已加入生词本‖已加入生字本‖Added to vocabulary‖Ajouté au vocabulaire‖Añadido al vocabulario‖Добавлено в словарь‖أُضيفت إلى المفردات‖単語帳に追加しました‖단어장에 추가됨
+已移出生词本‖已移出生字本‖Removed from vocabulary‖Retiré du vocabulaire‖Quitado del vocabulario‖Удалено из словаря‖أُزيلت من المفردات‖単語帳から削除しました‖단어장에서 제거됨
+没有匹配的单词‖沒有符合的單字‖No matching words‖Aucun mot correspondant‖No hay palabras coincidentes‖Нет совпадений‖لا توجد كلمات مطابقة‖一致する単語はありません‖일치하는 단어 없음
+生词本还是空的，翻译单词后点星标收藏‖生字本還是空的，翻譯單字後點星號收藏‖Your vocabulary is empty. Translate a word and tap the star to save it.‖Votre vocabulaire est vide. Traduisez un mot puis touchez l’étoile.‖Tu vocabulario está vacío. Traduce una palabra y pulsa la estrella.‖Словарь пуст. Переведите слово и нажмите звёздочку.‖المفردات فارغة. ترجم كلمة واضغط النجمة لحفظها.‖単語帳は空です。単語を翻訳して星を押すと保存できます。‖단어장이 비어 있습니다. 단어를 번역하고 별을 눌러 저장하세요.
+生词本还是空的‖生字本還是空的‖Your vocabulary is empty‖Votre vocabulaire est vide‖Tu vocabulario está vacío‖Словарь пуст‖المفردات فارغة‖単語帳は空です‖단어장이 비어 있습니다
+已导出到 {0}‖已匯出到 {0}‖Exported to {0}‖Exporté vers {0}‖Exportado a {0}‖Экспортировано в {0}‖تم التصدير إلى {0}‖{0} に書き出しました‖{0}(으)로 내보냄
+已清空生词本‖已清空生字本‖Vocabulary cleared‖Vocabulaire vidé‖Vocabulario vaciado‖Словарь очищен‖تم مسح المفردات‖単語帳を空にしました‖단어장을 비웠습니다
+找不到下载文件夹：{0}‖找不到下載資料夾：{0}‖Can't find the Downloads folder: {0}‖Dossier Téléchargements introuvable : {0}‖No se encuentra la carpeta Descargas: {0}‖Не найдена папка «Загрузки»: {0}‖تعذر العثور على مجلد التنزيلات: {0}‖ダウンロードフォルダーが見つかりません：{0}‖다운로드 폴더를 찾을 수 없음: {0}
+导出失败：{0}‖匯出失敗：{0}‖Export failed: {0}‖Échec de l’export : {0}‖Error al exportar: {0}‖Ошибка экспорта: {0}‖فشل التصدير: {0}‖書き出しに失敗しました：{0}‖내보내기 실패: {0}

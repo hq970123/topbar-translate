@@ -33,6 +33,8 @@ pub struct Settings {
     pub failover: bool,
     /// Extra services whose translations are shown under the main result (ids, at most 3).
     pub compare_providers: Vec<String>,
+    /// Show phonetics and definitions when the input is a single English word.
+    pub word_lookup: bool,
     /// Whisper model for voice input: tiny | base | small
     pub voice_model: String,
     /// Clear input and result after the panel collapses.
@@ -71,6 +73,7 @@ impl Default for Settings {
             replace_shortcut: "CommandOrControl+Alt+R".into(),
             failover: true,
             compare_providers: Vec::new(),
+            word_lookup: true,
             voice_model: "base".into(),
             clear_on_hide: true,
             history_enabled: true,

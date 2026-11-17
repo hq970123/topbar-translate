@@ -2,6 +2,7 @@ mod config;
 mod lang;
 mod panel;
 mod selection;
+mod dict;
 mod snip;
 mod voice;
 mod translate;
@@ -397,6 +398,35 @@ async fn open_settings(app: AppHandle, tab: Option<String>) {
 }
 
 #[tauri::command]
+async fn lookup_word(app: AppHandle, word: String) -> Option<dict::Entry> {
+    let on = app.state::<AppState>().cfg.lock().unwrap().settings.word_lookup;
+    if !on {
+        return None;
+    }
+    dict::lookup(&word).await
+}
+
+/// Save the vocabulary list (CSV built by the UI) into the Downloads folder.
+#[tauri::command]
+fn export_vocab(app: AppHandle, csv: String) -> Result<String, String> {
+    let dir = app
+        .path()
+        .download_dir()
+        .or_else(|_| app.path().document_dir())
+        .map_err(|e| format!("找不到下载文件夹：{e}"))?;
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let path = dir.join(format!("TopBarTranslate-vocab-{secs}.csv"));
+    // UTF-8 BOM so Excel opens Chinese text correctly.
+    let mut bytes = vec![0xEF, 0xBB, 0xBF];
+    bytes.extend_from_slice(csv.as_bytes());
+    std::fs::write(&path, bytes).map_err(|e| format!("导出失败：{e}"))?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn copy_text(app: AppHandle, text: String) -> Result<(), String> {
     app.clipboard().write_text(text).map_err(|e| e.to_string())
 }
@@ -729,6 +759,8 @@ pub fn run() {
             hide_panel,
             open_settings,
             copy_text,
+            lookup_word,
+            export_vocab,
             paste_text,
             quit_app,
         ])
