@@ -203,6 +203,7 @@ async function doTranslate() {
   const res = $("result");
   res.innerHTML = `<span class="loading">翻译中</span>`;
   $("meta").textContent = "";
+  clearCompare();
   try {
     const r = await invoke("translate", { req: { text, image: S.image, source: S.source, target: S.target, provider_id: S.providerId } });
     if (id !== S.reqId) return; // a newer request superseded this one
@@ -210,13 +211,54 @@ async function doTranslate() {
     res.textContent = r.text;
     History.add({ src: text.trim().slice(0, 5000), dst: r.text, sl: r.source, tl: r.target, prov: r.provider_name, img: !!S.image && !text.trim() }, S.state.settings);
     const auto = S.source === "auto" ? t("检测到") + " " : "";
-    $("meta").textContent = `${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
+    const fb = r.fallback_from ? t("{0} 失败，已改用 {1}", r.fallback_from, r.provider_name) + " · " : "";
+    $("meta").textContent = `${fb}${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
     renderLangs();
+    runCompare(id, text, S.image, r);
   } catch (err) {
     if (id !== S.reqId) return;
     showError(err);
   }
 }
+
+/* ---------- multi-engine compare ---------- */
+function clearCompare() {
+  const box = $("compare");
+  box.innerHTML = "";
+  box.classList.add("hidden");
+}
+function runCompare(id, text, image, main) {
+  const ids = (S.state.settings.compare_providers || []).filter((x) => x !== main.provider_id);
+  const list = ids
+    .map((x) => S.state.providers.find((p) => p.id === x))
+    .filter((p) => p && p.enabled && (!p.key_required || p.has_key) && (!image || p.supports_image));
+  const box = $("compare");
+  if (!list.length) { clearCompare(); return; }
+  box.innerHTML = list
+    .map((p) => `<div class="cmp-row" data-id="${p.id}"><div class="cmp-head"><b>${esc(p.name)}</b><button class="icon-btn cmp-copy" title="复制"><svg class="lucide" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /> <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg></button></div><div class="cmp-text"><span class="loading">翻译中</span></div></div>`)
+    .join("");
+  box.classList.remove("hidden");
+  reportSize();
+  list.forEach(async (p) => {
+    const row = box.querySelector(`.cmp-row[data-id="${p.id}"] .cmp-text`);
+    try {
+      const r = await invoke("translate", { req: { text, image, source: main.source, target: main.target, provider_id: p.id, no_failover: true } });
+      if (id !== S.reqId) return;
+      row.textContent = r.text;
+    } catch (err) {
+      if (id !== S.reqId) return;
+      row.innerHTML = `<span class="err">⚠ ${esc((err && err.message) || String(err))}</span>`;
+    }
+    reportSize();
+  });
+}
+$("compare").addEventListener("click", async (e) => {
+  const b = e.target.closest(".cmp-copy"); if (!b) return;
+  const txt = b.closest(".cmp-row").querySelector(".cmp-text").textContent;
+  if (!txt) return;
+  await invoke("copy_text", { text: txt });
+  toast("已复制");
+});
 
 function showError(err) {
   const e = typeof err === "string" ? { code: "error", message: err } : err || {};
@@ -306,6 +348,7 @@ function clearContent() {
   $("result").classList.remove("expanded");
   $("expandBtn").classList.remove("active");
   $("meta").textContent = "";
+  clearCompare();
   showHistory(false);
   updateCounter();
   renderLangs();
@@ -406,6 +449,7 @@ function showHistory(on) {
   $("historyCard").classList.toggle("hidden", !on);
   document.querySelector(".input-card").classList.toggle("hidden", on);
   $("resultCard").classList.toggle("hidden", on);
+  $("compare").classList.toggle("hist-off", on);
   $("histBtn").classList.toggle("active", on);
   if (on) { $("histSearch").value = ""; renderHistory(); setTimeout(() => $("histSearch").focus(), 20); }
   requestAnimationFrame(reportSize);

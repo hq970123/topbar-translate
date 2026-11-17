@@ -31,6 +31,7 @@
       <div class="group">
         <div class="row"><div><b>全局唤起快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="shortcutBtn" data-sc="shortcut"></button></div>
         <div class="row"><div><b>划词翻译快捷键</b><small>在任意应用中选中文字后按下，直接翻译</small></div><button class="ghost shortcut" id="selShortcutBtn" data-sc="select_shortcut"></button></div>
+        <div class="row"><div><b>翻译并替换快捷键</b><small>选中自己写的文字后按下，直接替换成译文（适合聊天框、邮件）</small></div><button class="ghost shortcut" id="repShortcutBtn" data-sc="replace_shortcut"></button></div>
         <div class="row"><div><b>截图翻译快捷键</b><small>点击后按下新的组合键，Esc 取消，Backspace 清除</small></div><button class="ghost shortcut" id="snipShortcutBtn" data-sc="snip_shortcut"></button></div>
         <div class="row"><div><b>主题</b></div><select data-k="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
         <div class="row"><div><b>界面语言</b></div><select data-k="ui_language" id="uiLangSel"></select></div>
@@ -62,9 +63,10 @@
       <div class="group list" id="provList"></div>
       <div class="group">
         <div class="row"><div><b>默认翻译源</b></div><select id="defaultSel"></select></div>
-        <div class="row"><div><b>自动故障切换</b><small>默认服务失败时改用备用服务（V1.1 提供）</small></div><label class="switch"><input type="checkbox" disabled /><span></span></label></div>
+        <div class="row"><div><b>自动故障切换</b><small>当前服务超时或报错时，自动改用其他已配置的服务</small></div><label class="switch"><input type="checkbox" data-k="failover" /><span></span></label></div>
+        <div class="row col"><div><b>多引擎对比</b><small>翻译时同时显示这些服务的译文，最多 3 个</small></div><div class="chips" id="cmpList"></div></div>
       </div>
-      <p class="note">API Key 保存在系统安全存储（Windows 凭据管理器 / macOS 钥匙串），不会写入配置文件或日志。翻译内容只发送到当前选中的翻译服务。</p>
+      <p class="note">API Key 保存在系统安全存储（Windows 凭据管理器 / macOS 钥匙串），不会写入配置文件或日志。翻译内容只发送到你启用的翻译服务（当前服务，以及开启后的故障切换和对比服务）。</p>
     </section>
 
     <!-- About -->

@@ -122,7 +122,7 @@ document.addEventListener("keydown", (e) => {
   if (!mods.length && !/^F\d+$/.test(k)) { toast("请至少包含一个修饰键（Ctrl/⌘/Alt/Shift）"); return; }
   const combo = [...mods, k].join("+");
   const key = stopRec();
-  const others = ["shortcut", "snip_shortcut", "select_shortcut"].filter((k) => k !== key);
+  const others = ["shortcut", "snip_shortcut", "select_shortcut", "replace_shortcut"].filter((k) => k !== key);
   if (others.some((k) => ST.settings[k] === combo)) { toast("快捷键不能重复"); renderGeneral(); return; }
   saveSettings({ [key]: combo });
 }, true);
@@ -162,7 +162,25 @@ function renderApis() {
     .filter((p) => p.enabled)
     .map((p) => `<option value="${p.id}" ${p.id === def ? "selected" : ""}>${esc(p.name)}</option>`)
     .join("");
+  renderCompare();
 }
+
+function renderCompare() {
+  const sel = ST.settings.compare_providers || [];
+  const ready = ST.providers.filter((p) => p.enabled && (!p.key_required || p.has_key));
+  $("cmpList").innerHTML = ready
+    .map((p) => `<label class="chip ${sel.includes(p.id) ? "on" : ""}"><input type="checkbox" data-cmp="${p.id}" ${sel.includes(p.id) ? "checked" : ""}/>${esc(p.name)}</label>`)
+    .join("");
+}
+$("cmpList").addEventListener("change", (e) => {
+  const id = e.target.dataset.cmp; if (!id) return;
+  let sel = (ST.settings.compare_providers || []).filter((x) => x !== id);
+  if (e.target.checked) {
+    if (sel.length >= 3) { toast("最多选择 3 个"); renderCompare(); return; }
+    sel.push(id);
+  }
+  saveSettings({ compare_providers: sel }).then(renderCompare);
+});
 
 $("defaultSel").onchange = async (e) => {
   try { ST = await invoke("set_default_provider", { id: e.target.value }); renderApis(); toast("已设为默认"); }

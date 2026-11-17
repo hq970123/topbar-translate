@@ -27,6 +27,12 @@ pub struct Settings {
     pub snip_shortcut: String,
     /// Global shortcut for translating the text currently selected in any app.
     pub select_shortcut: String,
+    /// Global shortcut: translate the selected text and paste the translation over it.
+    pub replace_shortcut: String,
+    /// When the chosen service fails, try the other configured services in order.
+    pub failover: bool,
+    /// Extra services whose translations are shown under the main result (ids, at most 3).
+    pub compare_providers: Vec<String>,
     /// Whisper model for voice input: tiny | base | small
     pub voice_model: String,
     /// Clear input and result after the panel collapses.
@@ -62,6 +68,9 @@ impl Default for Settings {
             shortcut: "CommandOrControl+Alt+T".into(),
             snip_shortcut: "CommandOrControl+Alt+S".into(),
             select_shortcut: "CommandOrControl+Alt+D".into(),
+            replace_shortcut: "CommandOrControl+Alt+R".into(),
+            failover: true,
+            compare_providers: Vec::new(),
             voice_model: "base".into(),
             clear_on_hide: true,
             history_enabled: true,
@@ -153,6 +162,11 @@ impl Config {
                 .map(|p| p.id.clone())
                 .unwrap_or_else(|| INDEX_ID.into());
         }
+        // Compare list: known services only, no duplicates, at most 3.
+        let ids: Vec<String> = self.providers.iter().map(|p| p.id.clone()).collect();
+        let mut seen = std::collections::HashSet::new();
+        self.settings.compare_providers.retain(|id| ids.contains(id) && seen.insert(id.clone()));
+        self.settings.compare_providers.truncate(3);
     }
 
     pub fn provider(&self, id: &str) -> Option<&Provider> {

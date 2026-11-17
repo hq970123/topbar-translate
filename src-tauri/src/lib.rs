@@ -93,28 +93,42 @@ fn detect_language(text: String) -> String {
     lang::detect(&text)
 }
 
-#[derive(Deserialize)]
-struct TranslateReq {
-    text: String,
-    image: Option<String>,
-    source: String,
-    target: String,
-    provider_id: Option<String>,
+#[derive(Deserialize, Clone)]
+pub struct TranslateReq {
+    pub text: String,
+    pub image: Option<String>,
+    pub source: String,
+    pub target: String,
+    pub provider_id: Option<String>,
+    /// Compare rows ask one specific service and must not fall back to another.
+    #[serde(default)]
+    pub no_failover: bool,
 }
 
 #[derive(Serialize)]
-struct TranslateResp {
-    text: String,
+pub struct TranslateResp {
+    pub text: String,
     source: String,
     target: String,
     provider_id: String,
     provider_name: String,
     ms: u128,
+    /// Name of the service that failed before this one answered (automatic failover).
+    fallback_from: Option<String>,
+}
+
+/// Errors worth trying another service for. Empty input never is.
+fn should_fail_over(e: &ApiError) -> bool {
+    !matches!(e.code.as_str(), "empty")
 }
 
 #[tauri::command]
 async fn translate(app: AppHandle, req: TranslateReq) -> Result<TranslateResp, ApiError> {
-    let (provider, primary, secondary) = {
+    translate_core(&app, req).await
+}
+
+pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<TranslateResp, ApiError> {
+    let (provider, primary, secondary, backups) = {
         let st = app.state::<AppState>();
         let cfg = st.cfg.lock().unwrap();
         let id = req.provider_id.clone().unwrap_or_else(|| cfg.settings.default_provider.clone());
@@ -122,7 +136,15 @@ async fn translate(app: AppHandle, req: TranslateReq) -> Result<TranslateResp, A
             .provider(&id)
             .cloned()
             .ok_or_else(|| ApiError::new("config", "找不到所选翻译源，请在设置中检查"))?;
-        (p, cfg.settings.target_lang.clone(), cfg.settings.second_target_lang.clone())
+        let backups: Vec<config::Provider> = if cfg.settings.failover && !req.no_failover {
+            // Default service first, then the rest in the order they are listed.
+            let mut v: Vec<config::Provider> = cfg.providers.iter().filter(|x| x.id != p.id).cloned().collect();
+            v.sort_by_key(|x| x.id != cfg.settings.default_provider);
+            v
+        } else {
+            Vec::new()
+        };
+        (p, cfg.settings.target_lang.clone(), cfg.settings.second_target_lang.clone(), backups)
     };
     if !provider.enabled {
         return Err(ApiError::new("config", format!("「{}」已被禁用，请切换翻译源", provider.name)));
@@ -137,7 +159,6 @@ async fn translate(app: AppHandle, req: TranslateReq) -> Result<TranslateResp, A
         return Err(ApiError::new("config", "无法识别目标语言，请手动选择"));
     }
     let target = lang::resolve_target(&source, &req.target, &primary, &secondary);
-    let key = secrets::get(&provider.id);
     let started = Instant::now();
     let job = translate::Job {
         text: &text,
@@ -145,15 +166,50 @@ async fn translate(app: AppHandle, req: TranslateReq) -> Result<TranslateResp, A
         source: &source,
         target: &target,
     };
-    let out = translate::run(&provider, key, &job).await?;
-    Ok(TranslateResp {
-        text: out,
-        source,
-        target,
-        provider_id: provider.id.clone(),
-        provider_name: provider.name.clone(),
-        ms: started.elapsed().as_millis(),
-    })
+    let first_err = match translate::run(&provider, secrets::get(&provider.id), &job).await {
+        Ok(out) => {
+            return Ok(TranslateResp {
+                text: out,
+                source,
+                target,
+                provider_id: provider.id.clone(),
+                provider_name: provider.name.clone(),
+                ms: started.elapsed().as_millis(),
+                fallback_from: None,
+            })
+        }
+        Err(e) => e,
+    };
+    if !should_fail_over(&first_err) {
+        return Err(first_err);
+    }
+    // Automatic failover: at most two more services that are ready to use.
+    let mut tried = 0;
+    for b in backups {
+        if tried >= 2 {
+            break;
+        }
+        let key = secrets::get(&b.id);
+        if !b.enabled || (config::key_required(&b.kind) && key.is_none()) {
+            continue;
+        }
+        if job.image.is_some() && !translate::supports_image(&b.kind) {
+            continue;
+        }
+        tried += 1;
+        if let Ok(out) = translate::run(&b, key, &job).await {
+            return Ok(TranslateResp {
+                text: out,
+                source,
+                target,
+                provider_id: b.id.clone(),
+                provider_name: b.name.clone(),
+                ms: started.elapsed().as_millis(),
+                fallback_from: Some(provider.name.clone()),
+            });
+        }
+    }
+    Err(first_err)
 }
 
 #[tauri::command]
@@ -182,6 +238,7 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
                 cfg.settings.shortcut = old_shortcut.0.clone();
                 cfg.settings.snip_shortcut = old_shortcut.1.clone();
                 cfg.settings.select_shortcut = old_shortcut.2.clone();
+                cfg.settings.replace_shortcut = old_shortcut.3.clone();
             }
             let _ = apply_shortcut(&app, &old_shortcut);
             return Err(e);
@@ -357,16 +414,16 @@ fn quit_app(app: AppHandle) {
 
 // ---------- helpers ----------
 
-type Shortcuts = (String, String, String);
+type Shortcuts = (String, String, String, String);
 
 fn shortcuts_of(s: &config::Settings) -> Shortcuts {
-    (s.shortcut.clone(), s.snip_shortcut.clone(), s.select_shortcut.clone())
+    (s.shortcut.clone(), s.snip_shortcut.clone(), s.select_shortcut.clone(), s.replace_shortcut.clone())
 }
 
 fn apply_shortcut(app: &AppHandle, sc: &Shortcuts) -> Result<(), String> {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
-    for s in [sc.0.as_str(), sc.1.as_str(), sc.2.as_str()] {
+    for s in [sc.0.as_str(), sc.1.as_str(), sc.2.as_str(), sc.3.as_str()] {
         if s.trim().is_empty() {
             continue;
         }
@@ -384,14 +441,17 @@ enum ShortcutAction {
     Toggle,
     Snip,
     Selection,
+    Replace,
 }
 
 fn shortcut_action(app: &AppHandle, sc: &tauri_plugin_global_shortcut::Shortcut) -> ShortcutAction {
-    let (_, snip, sel) = shortcuts_of(&app.state::<AppState>().cfg.lock().unwrap().settings);
+    let (_, snip, sel, rep) = shortcuts_of(&app.state::<AppState>().cfg.lock().unwrap().settings);
     if shortcut_is(&snip, sc) {
         ShortcutAction::Snip
     } else if shortcut_is(&sel, sc) {
         ShortcutAction::Selection
+    } else if shortcut_is(&rep, sc) {
+        ShortcutAction::Replace
     } else {
         ShortcutAction::Toggle
     }
@@ -556,6 +616,7 @@ pub fn run() {
                         match shortcut_action(app, shortcut) {
                             ShortcutAction::Snip => snip::start(app),
                             ShortcutAction::Selection => selection::translate_selection(app),
+                            ShortcutAction::Replace => selection::replace_selection(app),
                             ShortcutAction::Toggle => panel::toggle(app),
                         }
                     }

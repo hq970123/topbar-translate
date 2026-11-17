@@ -30,6 +30,68 @@ pub fn translate_selection(app: &AppHandle) {
     });
 }
 
+/// Translate the selected text and paste the translation over it (e.g. in a chat box).
+pub fn replace_selection(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let fail = |app: &AppHandle, msg: String| {
+            crate::panel::show(app, true, None);
+            let _ = app.emit("panel:toast", msg);
+        };
+        let text = match tauri::async_runtime::spawn_blocking({
+            let app = app.clone();
+            move || grab(&app)
+        })
+        .await
+        {
+            Ok(Ok(Some(t))) => t,
+            Ok(Ok(None)) => return fail(&app, "没有检测到选中的文字".into()),
+            Ok(Err(e)) => return fail(&app, e),
+            Err(e) => return fail(&app, e.to_string()),
+        };
+        let req = crate::TranslateReq {
+            text,
+            image: None,
+            source: "auto".into(),
+            target: "auto".into(),
+            provider_id: None,
+            no_failover: false,
+        };
+        match crate::translate_core(&app, req).await {
+            Ok(r) => {
+                let app2 = app.clone();
+                let res = tauri::async_runtime::spawn_blocking(move || paste(&app2, &r.text)).await;
+                match res {
+                    Ok(Ok(())) => {}
+                    Ok(Err(e)) => fail(&app, e),
+                    Err(e) => fail(&app, e.to_string()),
+                }
+            }
+            Err(e) => fail(&app, e.message),
+        }
+    });
+}
+
+/// Put `text` on the clipboard, send the paste shortcut, then restore the clipboard.
+fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
+    let cb = app.clipboard();
+    let previous = cb.read_text().ok();
+    cb.write_text(text.to_string()).map_err(|e| format!("无法访问剪贴板：{e}"))?;
+    thread::sleep(Duration::from_millis(30));
+    let res = platform::send_paste();
+    // The target app reads the clipboard asynchronously; don't restore too early.
+    thread::sleep(Duration::from_millis(350));
+    match previous {
+        Some(p) => {
+            let _ = cb.write_text(p);
+        }
+        None => {
+            let _ = cb.clear();
+        }
+    }
+    res
+}
+
 fn grab(app: &AppHandle) -> Result<Option<String>, String> {
     platform::ensure_permission()?;
     let cb = app.clipboard();
@@ -79,7 +141,7 @@ mod platform {
     use std::time::{Duration, Instant};
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
-        KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_C, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
+        KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_C, VK_CONTROL, VK_V, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
     };
 
     pub fn ensure_permission() -> Result<(), String> {
@@ -110,6 +172,14 @@ mod platform {
     }
 
     pub fn send_copy() -> Result<(), String> {
+        send_ctrl(VK_C)
+    }
+
+    pub fn send_paste() -> Result<(), String> {
+        send_ctrl(VK_V)
+    }
+
+    fn send_ctrl(letter: VIRTUAL_KEY) -> Result<(), String> {
         // The shortcut's own modifiers (e.g. Alt in Ctrl+Alt+D) would turn Ctrl+C into
         // something else. Wait briefly for the user to let go, then force them up.
         let mods = [VK_MENU, VK_SHIFT, VK_LWIN, VK_RWIN, VK_CONTROL];
@@ -121,7 +191,7 @@ mod platform {
         if !held.is_empty() {
             send(&held);
         }
-        let seq = [key(VK_CONTROL, false), key(VK_C, false), key(VK_C, true), key(VK_CONTROL, true)];
+        let seq = [key(VK_CONTROL, false), key(letter, false), key(letter, true), key(VK_CONTROL, true)];
         if send(&seq) as usize != seq.len() {
             return Err("无法模拟复制操作（可能被系统或安全软件拦截）".into());
         }
@@ -161,12 +231,19 @@ mod platform {
     }
 
     pub fn send_copy() -> Result<(), String> {
-        const KEY_C: u16 = 8; // kVK_ANSI_C
+        send_cmd(8) // kVK_ANSI_C
+    }
+
+    pub fn send_paste() -> Result<(), String> {
+        send_cmd(9) // kVK_ANSI_V
+    }
+
+    fn send_cmd(keycode: u16) -> Result<(), String> {
         thread::sleep(Duration::from_millis(60));
         let src = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
             .map_err(|_| "无法模拟复制操作".to_string())?;
         for is_down in [true, false] {
-            let ev = CGEvent::new_keyboard_event(src.clone(), KEY_C, is_down)
+            let ev = CGEvent::new_keyboard_event(src.clone(), keycode, is_down)
                 .map_err(|_| "无法模拟复制操作".to_string())?;
             // Explicit flags: only ⌘, whatever the user is still holding.
             ev.set_flags(CGEventFlags::CGEventFlagCommand);
@@ -182,6 +259,9 @@ mod platform {
         Ok(())
     }
     pub fn send_copy() -> Result<(), String> {
+        Err("当前系统暂不支持划词翻译".into())
+    }
+    pub fn send_paste() -> Result<(), String> {
         Err("当前系统暂不支持划词翻译".into())
     }
 }
