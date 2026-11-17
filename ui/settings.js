@@ -122,8 +122,8 @@ document.addEventListener("keydown", (e) => {
   if (!mods.length && !/^F\d+$/.test(k)) { toast("请至少包含一个修饰键（Ctrl/⌘/Alt/Shift）"); return; }
   const combo = [...mods, k].join("+");
   const key = stopRec();
-  const other = key === "shortcut" ? "snip_shortcut" : "shortcut";
-  if (ST.settings[other] === combo) { toast("两个快捷键不能相同"); renderGeneral(); return; }
+  const others = ["shortcut", "snip_shortcut", "select_shortcut"].filter((k) => k !== key);
+  if (others.some((k) => ST.settings[k] === combo)) { toast("快捷键不能重复"); renderGeneral(); return; }
   saveSettings({ [key]: combo });
 }, true);
 

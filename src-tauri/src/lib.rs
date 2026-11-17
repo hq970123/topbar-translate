@@ -1,6 +1,7 @@
 mod config;
 mod lang;
 mod panel;
+mod selection;
 mod snip;
 mod voice;
 mod translate;
@@ -161,7 +162,7 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
     {
         let st = app.state::<AppState>();
         let mut cfg = st.cfg.lock().unwrap();
-        old_shortcut = (cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone());
+        old_shortcut = shortcuts_of(&cfg.settings);
         let onboarded = cfg.settings.onboarded;
         cfg.settings = settings;
         cfg.settings.onboarded = onboarded;
@@ -170,18 +171,19 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
     let (shortcut, autostart) = {
         let st = app.state::<AppState>();
         let cfg = st.cfg.lock().unwrap();
-        ((cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone()), cfg.settings.launch_at_login)
+        (shortcuts_of(&cfg.settings), cfg.settings.launch_at_login)
     };
     if shortcut != old_shortcut {
-        if let Err(e) = apply_shortcut(&app, &shortcut.0, &shortcut.1) {
+        if let Err(e) = apply_shortcut(&app, &shortcut) {
             // Roll back to the previous working shortcuts.
             {
                 let st = app.state::<AppState>();
                 let mut cfg = st.cfg.lock().unwrap();
                 cfg.settings.shortcut = old_shortcut.0.clone();
                 cfg.settings.snip_shortcut = old_shortcut.1.clone();
+                cfg.settings.select_shortcut = old_shortcut.2.clone();
             }
-            let _ = apply_shortcut(&app, &old_shortcut.0, &old_shortcut.1);
+            let _ = apply_shortcut(&app, &old_shortcut);
             return Err(e);
         }
     }
@@ -355,10 +357,16 @@ fn quit_app(app: AppHandle) {
 
 // ---------- helpers ----------
 
-fn apply_shortcut(app: &AppHandle, shortcut: &str, snip: &str) -> Result<(), String> {
+type Shortcuts = (String, String, String);
+
+fn shortcuts_of(s: &config::Settings) -> Shortcuts {
+    (s.shortcut.clone(), s.snip_shortcut.clone(), s.select_shortcut.clone())
+}
+
+fn apply_shortcut(app: &AppHandle, sc: &Shortcuts) -> Result<(), String> {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
-    for s in [shortcut, snip] {
+    for s in [sc.0.as_str(), sc.1.as_str(), sc.2.as_str()] {
         if s.trim().is_empty() {
             continue;
         }
@@ -367,9 +375,26 @@ fn apply_shortcut(app: &AppHandle, shortcut: &str, snip: &str) -> Result<(), Str
     Ok(())
 }
 
-fn is_snip_shortcut(app: &AppHandle, sc: &tauri_plugin_global_shortcut::Shortcut) -> bool {
-    let snip = app.state::<AppState>().cfg.lock().unwrap().settings.snip_shortcut.clone();
-    snip.parse::<tauri_plugin_global_shortcut::Shortcut>().map(|s| s.id() == sc.id()).unwrap_or(false)
+fn shortcut_is(combo: &str, sc: &tauri_plugin_global_shortcut::Shortcut) -> bool {
+    !combo.trim().is_empty()
+        && combo.parse::<tauri_plugin_global_shortcut::Shortcut>().map(|s| s.id() == sc.id()).unwrap_or(false)
+}
+
+enum ShortcutAction {
+    Toggle,
+    Snip,
+    Selection,
+}
+
+fn shortcut_action(app: &AppHandle, sc: &tauri_plugin_global_shortcut::Shortcut) -> ShortcutAction {
+    let (_, snip, sel) = shortcuts_of(&app.state::<AppState>().cfg.lock().unwrap().settings);
+    if shortcut_is(&snip, sc) {
+        ShortcutAction::Snip
+    } else if shortcut_is(&sel, sc) {
+        ShortcutAction::Selection
+    } else {
+        ShortcutAction::Toggle
+    }
 }
 
 #[tauri::command]
@@ -528,10 +553,10 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        if is_snip_shortcut(app, shortcut) {
-                            snip::start(app);
-                        } else {
-                            panel::toggle(app);
+                        match shortcut_action(app, shortcut) {
+                            ShortcutAction::Snip => snip::start(app),
+                            ShortcutAction::Selection => selection::translate_selection(app),
+                            ShortcutAction::Toggle => panel::toggle(app),
                         }
                     }
                 })
@@ -543,7 +568,7 @@ pub fn run() {
 
             let handle = app.handle().clone();
             let cfg = config::load(&handle);
-            let shortcut = (cfg.settings.shortcut.clone(), cfg.settings.snip_shortcut.clone());
+            let shortcut = shortcuts_of(&cfg.settings);
             let first_run = !cfg.settings.onboarded;
             app.manage(AppState {
                 cfg: Mutex::new(cfg),
@@ -552,7 +577,7 @@ pub fn run() {
 
             app.manage(snip::SnipState::default());
             app.manage(voice::VoiceState::default());
-            if let Err(e) = apply_shortcut(&handle, &shortcut.0, &shortcut.1) {
+            if let Err(e) = apply_shortcut(&handle, &shortcut) {
                 eprintln!("{e}");
             }
             // Keep the OS login item in sync with the setting.

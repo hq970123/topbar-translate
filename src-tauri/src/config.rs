@@ -25,6 +25,8 @@ pub struct Settings {
     pub shortcut: String,
     /// Global shortcut for screenshot translation.
     pub snip_shortcut: String,
+    /// Global shortcut for translating the text currently selected in any app.
+    pub select_shortcut: String,
     /// Whisper model for voice input: tiny | base | small
     pub voice_model: String,
     /// Clear input and result after the panel collapses.
@@ -59,6 +61,7 @@ impl Default for Settings {
             default_provider: INDEX_ID.into(),
             shortcut: "CommandOrControl+Alt+T".into(),
             snip_shortcut: "CommandOrControl+Alt+S".into(),
+            select_shortcut: "CommandOrControl+Alt+D".into(),
             voice_model: "base".into(),
             clear_on_hide: true,
             history_enabled: true,

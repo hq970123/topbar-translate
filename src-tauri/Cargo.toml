@@ -34,10 +34,12 @@ cpal = "0.16"
 
 [target.'cfg(windows)'.dependencies]
 # MSIX (Microsoft Store) builds: launch-at-login goes through the packaged StartupTask API.
-windows = { version = "0.58", features = ["ApplicationModel", "Foundation"] }
+windows = { version = "0.58", features = ["ApplicationModel", "Foundation", "Win32_UI_Input_KeyboardAndMouse"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+core-graphics = "0.24"
+core-foundation = "0.10"
 
 [profile.release]
 codegen-units = 1

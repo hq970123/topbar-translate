@@ -324,6 +324,18 @@ $("shotBtn").onclick = () => invoke("start_snip");
 listen("panel:image", (e) => { if (e.payload) setImage(e.payload); });
 listen("panel:toast", (e) => toast(String(e.payload)));
 
+/* ---------- selection translation (global shortcut, text grabbed by the backend) ---------- */
+listen("panel:text", (e) => {
+  const text = String(e.payload || "").slice(0, 5000);
+  if (!text.trim()) return;
+  showHistory(false);
+  if (S.image) setImage(null);
+  input.value = text;
+  onInputChanged(false);
+  S.reqId++;
+  doTranslate();
+});
+
 /* ---------- voice input (shown only when a local model is downloaded) ---------- */
 const mic = $("micBtn");
 let recording = false;
