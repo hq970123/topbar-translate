@@ -36,6 +36,10 @@ async function loadState() {
   $("welcomeKey").textContent = prettyShortcut(S.state.settings.shortcut, S.state.platform);
   renderLangs();
   renderProviders();
+  if ((S.state.shortcut_conflicts || []).length && !S.warnedSc) {
+    S.warnedSc = true;
+    setTimeout(() => toast(t("部分快捷键已被其他应用占用，可在设置中更换")), 600);
+  }
 }
 
 function currentProvider() {
@@ -211,13 +215,24 @@ async function doTranslate() {
     if (id !== S.reqId) return; // a newer request superseded this one
     S.last = r;
     res.textContent = r.text;
-    History.add({ src: text.trim().slice(0, 5000), dst: r.text, sl: r.source, tl: r.target, prov: r.provider_name, img: !!S.image && !text.trim() }, S.state.settings);
+    let srcText = text, fromImage = !!S.image && !text.trim(), image = S.image;
+    if (r.ocr_text) {
+      // Text was recognized on-device: put it in the input so it can be edited, and drop the image.
+      srcText = text.trim() ? `${text.trimEnd()}\n${r.ocr_text}` : r.ocr_text;
+      input.value = srcText;
+      S.image = image = null;
+      $("imgThumb").src = "";
+      $("imgChip").classList.add("hidden");
+      updateCounter();
+    }
+    History.add({ src: srcText.trim().slice(0, 5000), dst: r.text, sl: r.source, tl: r.target, prov: r.provider_name, img: fromImage }, S.state.settings);
     const auto = S.source === "auto" ? t("检测到") + " " : "";
     const fb = r.fallback_from ? t("{0} 失败，已改用 {1}", r.fallback_from, r.provider_name) + " · " : "";
     $("meta").textContent = `${fb}${auto}${langLabel(S.state, r.source)} → ${langLabel(S.state, r.target)} · ${r.provider_name} · ${(r.ms / 1000).toFixed(1)}s`;
     renderLangs();
-    runCompare(id, text, S.image, r);
-    updateStar(text, r);
+    if (r.ocr_text) $("meta").textContent = t("本地 OCR") + " · " + $("meta").textContent;
+    runCompare(id, srcText, image, r);
+    updateStar(srcText, r);
     if (dictP) dictP.then((d) => { if (id === S.reqId && d) renderDict(d); });
   } catch (err) {
     if (id !== S.reqId) return;

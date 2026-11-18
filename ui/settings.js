@@ -42,7 +42,13 @@ function renderGeneral() {
     if (el.type === "checkbox") el.checked = !!v;
     else el.value = v;
   });
-  document.querySelectorAll("[data-sc]").forEach((b) => (b.textContent = prettyShortcut(s[b.dataset.sc], ST.platform)));
+  const taken = ST.shortcut_conflicts || [];
+  document.querySelectorAll("[data-sc]").forEach((b) => {
+    b.textContent = prettyShortcut(s[b.dataset.sc], ST.platform);
+    const bad = taken.includes(b.dataset.sc);
+    b.classList.toggle("conflict", bad);
+    b.title = bad ? t("已被其他应用占用，请换一个组合键") : "";
+  });
   renderHistCount();
 }
 function renderHistCount() {

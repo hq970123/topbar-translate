@@ -35,6 +35,9 @@ pub struct Settings {
     pub compare_providers: Vec<String>,
     /// Show phonetics and definitions when the input is a single English word.
     pub word_lookup: bool,
+    /// Images: "auto" = send to a vision model when the service supports it, otherwise
+    /// recognize text on-device; "local" = always recognize on-device (image never uploaded).
+    pub ocr_mode: String,
     /// Whisper model for voice input: tiny | base | small
     pub voice_model: String,
     /// Clear input and result after the panel collapses.
@@ -74,6 +77,7 @@ impl Default for Settings {
             failover: true,
             compare_providers: Vec::new(),
             word_lookup: true,
+            ocr_mode: "auto".into(),
             voice_model: "base".into(),
             clear_on_hide: true,
             history_enabled: true,

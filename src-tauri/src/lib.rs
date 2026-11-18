@@ -3,6 +3,7 @@ mod lang;
 mod panel;
 mod selection;
 mod dict;
+mod ocr;
 mod snip;
 mod voice;
 mod translate;
@@ -22,6 +23,8 @@ use translate::ApiError;
 pub struct AppState {
     pub cfg: Mutex<Config>,
     pub panel: panel::Shared,
+    /// Settings keys whose shortcut another app already holds.
+    pub sc_conflicts: Mutex<Vec<String>>,
 }
 
 // ---------- view models ----------
@@ -44,6 +47,8 @@ struct StateView {
     visible: bool,
     platform: &'static str,
     version: String,
+    /// Settings keys whose shortcut could not be registered (taken by another app).
+    shortcut_conflicts: Vec<String>,
 }
 
 fn view(app: &AppHandle) -> StateView {
@@ -70,6 +75,7 @@ fn view(app: &AppHandle) -> StateView {
         visible,
         platform: if cfg!(target_os = "macos") { "macos" } else if cfg!(windows) { "windows" } else { "linux" },
         version: app.package_info().version.to_string(),
+        shortcut_conflicts: st.sc_conflicts.lock().unwrap().clone(),
     }
 }
 
@@ -116,6 +122,8 @@ pub struct TranslateResp {
     ms: u128,
     /// Name of the service that failed before this one answered (automatic failover).
     fallback_from: Option<String>,
+    /// Text recognized on-device from the image, when OCR was used.
+    ocr_text: Option<String>,
 }
 
 /// Errors worth trying another service for. Empty input never is.
@@ -129,7 +137,7 @@ async fn translate(app: AppHandle, req: TranslateReq) -> Result<TranslateResp, A
 }
 
 pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<TranslateResp, ApiError> {
-    let (provider, primary, secondary, backups) = {
+    let (provider, primary, secondary, backups, ocr_local) = {
         let st = app.state::<AppState>();
         let cfg = st.cfg.lock().unwrap();
         let id = req.provider_id.clone().unwrap_or_else(|| cfg.settings.default_provider.clone());
@@ -145,12 +153,27 @@ pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<Transl
         } else {
             Vec::new()
         };
-        (p, cfg.settings.target_lang.clone(), cfg.settings.second_target_lang.clone(), backups)
+        (p, cfg.settings.target_lang.clone(), cfg.settings.second_target_lang.clone(), backups, cfg.settings.ocr_mode == "local")
     };
     if !provider.enabled {
         return Err(ApiError::new("config", format!("「{}」已被禁用，请切换翻译源", provider.name)));
     }
-    let text: String = req.text.chars().take(5000).collect();
+    let mut text: String = req.text.chars().take(5000).collect();
+    let mut image = req.image.clone();
+    let mut ocr_text = None;
+    // On-device OCR when asked to, or when the service can't read images itself.
+    if let Some(img) = image.clone() {
+        if ocr_local || !translate::supports_image(&provider.kind) {
+            let found = tauri::async_runtime::spawn_blocking(move || ocr::recognize_data_url(&img))
+                .await
+                .map_err(|e| ApiError::new("ocr", e.to_string()))?
+                .map_err(|m| ApiError::new("ocr", m))?;
+            let found: String = found.chars().take(5000).collect();
+            text = if text.trim().is_empty() { found.clone() } else { format!("{}\n{}", text.trim_end(), found) };
+            image = None;
+            ocr_text = Some(found);
+        }
+    }
     let source = if req.source == "auto" || req.source.is_empty() {
         if text.trim().is_empty() { "auto".to_string() } else { lang::detect(&text) }
     } else {
@@ -163,7 +186,7 @@ pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<Transl
     let started = Instant::now();
     let job = translate::Job {
         text: &text,
-        image: req.image.as_deref(),
+        image: image.as_deref(),
         source: &source,
         target: &target,
     };
@@ -177,6 +200,7 @@ pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<Transl
                 provider_name: provider.name.clone(),
                 ms: started.elapsed().as_millis(),
                 fallback_from: None,
+                ocr_text,
             })
         }
         Err(e) => e,
@@ -207,6 +231,7 @@ pub async fn translate_core(app: &AppHandle, req: TranslateReq) -> Result<Transl
                 provider_name: b.name.clone(),
                 ms: started.elapsed().as_millis(),
                 fallback_from: Some(provider.name.clone()),
+                ocr_text: ocr_text.clone(),
             });
         }
     }
@@ -231,18 +256,29 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<StateView, String
         (shortcuts_of(&cfg.settings), cfg.settings.launch_at_login)
     };
     if shortcut != old_shortcut {
-        if let Err(e) = apply_shortcut(&app, &shortcut) {
-            // Roll back to the previous working shortcuts.
-            {
+        let new = [&shortcut.0, &shortcut.1, &shortcut.2, &shortcut.3];
+        let old = [&old_shortcut.0, &old_shortcut.1, &old_shortcut.2, &old_shortcut.3];
+        // Only a shortcut the user just changed is rolled back; one that was already taken stays flagged.
+        let bad: Vec<(usize, String)> = apply_shortcut(&app, &shortcut).into_iter().filter(|(i, _)| new[*i] != old[*i]).collect();
+        if let Some((_, msg)) = bad.first() {
+            let fixed = {
                 let st = app.state::<AppState>();
                 let mut cfg = st.cfg.lock().unwrap();
-                cfg.settings.shortcut = old_shortcut.0.clone();
-                cfg.settings.snip_shortcut = old_shortcut.1.clone();
-                cfg.settings.select_shortcut = old_shortcut.2.clone();
-                cfg.settings.replace_shortcut = old_shortcut.3.clone();
-            }
-            let _ = apply_shortcut(&app, &old_shortcut);
-            return Err(e);
+                for (i, _) in &bad {
+                    let v = old[*i].clone();
+                    match i {
+                        0 => cfg.settings.shortcut = v,
+                        1 => cfg.settings.snip_shortcut = v,
+                        2 => cfg.settings.select_shortcut = v,
+                        _ => cfg.settings.replace_shortcut = v,
+                    }
+                }
+                shortcuts_of(&cfg.settings)
+            };
+            apply_shortcut(&app, &fixed);
+            persist(&app)?;
+            broadcast(&app);
+            return Err(msg.clone());
         }
     }
     apply_autostart(&app, autostart);
@@ -450,16 +486,38 @@ fn shortcuts_of(s: &config::Settings) -> Shortcuts {
     (s.shortcut.clone(), s.snip_shortcut.clone(), s.select_shortcut.clone(), s.replace_shortcut.clone())
 }
 
-fn apply_shortcut(app: &AppHandle, sc: &Shortcuts) -> Result<(), String> {
+const SHORTCUT_KEYS: [&str; 4] = ["shortcut", "snip_shortcut", "select_shortcut", "replace_shortcut"];
+
+/// Register every shortcut on its own, so one taken combination doesn't block the rest.
+/// Returns (index, message) for each one that failed and remembers them for the settings UI.
+fn apply_shortcut(app: &AppHandle, sc: &Shortcuts) -> Vec<(usize, String)> {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
-    for s in [sc.0.as_str(), sc.1.as_str(), sc.2.as_str(), sc.3.as_str()] {
+    let mut failed = Vec::new();
+    let mut seen: Vec<u32> = Vec::new();
+    for (i, s) in [sc.0.as_str(), sc.1.as_str(), sc.2.as_str(), sc.3.as_str()].into_iter().enumerate() {
         if s.trim().is_empty() {
             continue;
         }
-        gs.register(s).map_err(|e| format!("快捷键 {s} 无法注册（可能已被占用）：{e}"))?;
+        let parsed = match s.parse::<tauri_plugin_global_shortcut::Shortcut>() {
+            Ok(p) => p,
+            Err(e) => {
+                failed.push((i, format!("快捷键 {s} 格式无效：{e}")));
+                continue;
+            }
+        };
+        if seen.contains(&parsed.id()) {
+            failed.push((i, "快捷键不能重复".to_string()));
+            continue;
+        }
+        seen.push(parsed.id());
+        if let Err(e) = gs.register(parsed) {
+            failed.push((i, format!("快捷键 {s} 无法注册（可能已被占用）：{e}")));
+        }
     }
-    Ok(())
+    *app.state::<AppState>().sc_conflicts.lock().unwrap() =
+        failed.iter().map(|(i, _)| SHORTCUT_KEYS[*i].to_string()).collect();
+    failed
 }
 
 fn shortcut_is(combo: &str, sc: &tauri_plugin_global_shortcut::Shortcut) -> bool {
@@ -664,11 +722,12 @@ pub fn run() {
             app.manage(AppState {
                 cfg: Mutex::new(cfg),
                 panel: Arc::new(Mutex::new(panel::PanelState::default())),
+                sc_conflicts: Mutex::new(Vec::new()),
             });
 
             app.manage(snip::SnipState::default());
             app.manage(voice::VoiceState::default());
-            if let Err(e) = apply_shortcut(&handle, &shortcut) {
+            for (_, e) in apply_shortcut(&handle, &shortcut) {
                 eprintln!("{e}");
             }
             // Keep the OS login item in sync with the setting.

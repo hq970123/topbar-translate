@@ -29,17 +29,20 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 xcap = "0.9"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "bmp", "gif"] }
 whisper-rs = "0.16"
 cpal = "0.16"
 
 [target.'cfg(windows)'.dependencies]
 # MSIX (Microsoft Store) builds: launch-at-login goes through the packaged StartupTask API.
-windows = { version = "0.58", features = ["ApplicationModel", "Foundation", "Win32_UI_Input_KeyboardAndMouse"] }
+windows = { version = "0.58", features = ["ApplicationModel", "Foundation", "Foundation_Collections", "Globalization", "Graphics_Imaging", "Media_Ocr", "Storage_Streams", "Win32_UI_Input_KeyboardAndMouse"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 core-graphics = "0.24"
 core-foundation = "0.10"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSDictionary", "NSError", "NSString"] }
+objc2-vision = { version = "0.3", default-features = false, features = ["std", "VNRequestHandler", "VNRequest", "VNRecognizeTextRequest", "VNObservation", "VNTypes"] }
 
 [profile.release]
 codegen-units = 1
