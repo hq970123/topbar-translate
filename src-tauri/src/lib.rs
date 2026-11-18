@@ -58,6 +58,7 @@ fn view(app: &AppHandle) -> StateView {
         let p = st.panel.lock().unwrap();
         (p.pinned, p.visible)
     };
+    let conflicts = st.sc_conflicts.lock().unwrap().clone();
     StateView {
         providers: cfg
             .providers
@@ -75,7 +76,7 @@ fn view(app: &AppHandle) -> StateView {
         visible,
         platform: if cfg!(target_os = "macos") { "macos" } else if cfg!(windows) { "windows" } else { "linux" },
         version: app.package_info().version.to_string(),
-        shortcut_conflicts: st.sc_conflicts.lock().unwrap().clone(),
+        shortcut_conflicts: conflicts,
     }
 }
 
